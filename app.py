@@ -277,9 +277,10 @@ def api_config_heal():
     })
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
     print("=" * 60)
     print("[TIKTOK LIVE BOSS FIGHT SERVER DANG KHOI CHAY]")
-    print("-> Man hinh Game (OBS Browser Source): http://localhost:5000/game")
-    print("-> Bang dieu khien gia lap & ket noi:  http://localhost:5000/admin")
+    print(f"-> Man hinh Game (OBS Browser Source): http://localhost:{port}/game")
+    print(f"-> Bang dieu khien gia lap & ket noi:  http://localhost:{port}/admin")
     print("=" * 60)
-    app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)

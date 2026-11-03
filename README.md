@@ -79,8 +79,24 @@ Hệ thống sở hữu trọn bộ 12 Ải Boss liên hoàn, không lo trùng l
 
 ## 🚀 HƯỚNG DẪN KHỞI CHẠY
 
-1. Nhấp đúp chuột vào file: **`start_server.bat`**
+### Cách 1: Chạy trực tiếp trên máy tính + OBS (Tốt nhất cho Livestream)
+1. Nhấp đúp chuột vào file: **`start_server.bat`** (hoặc gõ `python app.py` trong terminal).
 2. Mở trình duyệt:
    - 🖥️ **Màn hình Game (Overlay OBS)**: `http://localhost:5000/game`
    - 🕹️ **Bảng điều khiển & Giả lập**: `http://localhost:5000/admin`
 3. Đưa vào OBS: Thêm **Browser Source** ➔ Dán link `http://localhost:5000/game` ➔ Kích thước `1920x1080` (ngang) hoặc `1080x1920` (dọc).
+
+---
+
+### Cách 2: Deploy lên đám mây Render.com (Online 24/7 Miễn Phí)
+1. Đăng nhập [Render.com](https://render.com) bằng tài khoản GitHub của bạn.
+2. Nhấn nút **New +** ➔ Chọn **Web Service**.
+3. Chọn repo GitHub: `ThanhNhan411/tiktoklive-bossfighting`.
+4. Điền cấu hình:
+   - **Name**: `tiktoklive-bossfight`
+   - **Region**: `Singapore` (tốc độ về VN nhanh nhất)
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn -w 1 -k gthread --threads 30 --timeout 0 -b 0.0.0.0:$PORT app:app`
+5. Chọn gói **Free** ➔ Nhấn **Create Web Service**.
+6. Render sẽ cấp URL: `https://tiktoklive-bossfight.onrender.com/game`. Bạn có thể dán link này vào OBS từ bất kỳ máy nào!
