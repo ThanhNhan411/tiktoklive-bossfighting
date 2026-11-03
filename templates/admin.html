@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng Điều Khiển & Giả Lập - TikTok Live Boss Fight</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header class="admin-header">
+        <div class="admin-title">
+            <span>⚔️ TIKTOK LIVE BOSS FIGHT - CONTROL PANEL</span>
+        </div>
+        <div class="header-links">
+            <a href="/game" target="_blank" class="btn-link">🖥️ Mở Màn Hình Game (Overlay)</a>
+        </div>
+    </header>
+
+    <main class="admin-grid">
+        <!-- CỘT 1: KẾT NỐI TIKTOK & ĐIỀU KHIỂN BOSS -->
+        <div>
+            <!-- THẺ 1: KẾT NỐI TIKTOK LIVE -->
+            <div class="card" style="margin-bottom: 24px;">
+                <div class="card-title">📡 KẾT NỐI PHÒNG LIVE TIKTOK</div>
+                
+                <div class="status-indicator">
+                    <div id="statusDot" class="status-dot"></div>
+                    <span id="statusText">Chưa kết nối</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tên Kênh TikTok (Username đang Live):</label>
+                    <input type="text" id="tiktokUsername" class="form-input" placeholder="Ví dụ: mychannel hoặc @mychannel" />
+                </div>
+
+                <div class="btn-row">
+                    <button id="btnConnect" class="btn btn-success">Kết Nối TikTok Live</button>
+                    <button id="btnDisconnect" class="btn btn-danger" style="display: none;">Ngắt Kết Nối</button>
+                </div>
+
+                <div class="obs-link-box">
+                    <span class="obs-link-text" id="obsUrl">http://localhost:5000/game</span>
+                    <button id="btnCopyObs" class="btn btn-primary" style="padding: 6px 12px; font-size: 11px;">Copy Link OBS</button>
+                </div>
+                <div style="font-size: 11px; color: #888; margin-top: 6px;">
+                    💡 Dán link trên vào <strong>Browser Source</strong> trong OBS Studio (1920x1080 hoặc 1080x1920).
+                </div>
+            </div>
+
+            <!-- THẺ 2: ĐIỀU KHIỂN BOSS -->
+            <div class="card">
+                <div class="card-title">🐉 QUẢN LÝ BOSS CHIẾN</div>
+
+                <div class="form-group">
+                    <label class="form-label">Tùy chỉnh Máu Boss (Max HP):</label>
+                    <input type="number" id="inputCustomHp" class="form-input" placeholder="Mặc định: 50,000 HP" />
+                </div>
+
+                <div class="btn-row" style="margin-bottom: 16px;">
+                    <button id="btnResetBoss" class="btn btn-warning">🔄 Hồi Sinh / Đầy Máu</button>
+                    <button id="btnNextBoss" class="btn btn-primary">⏭️ Sang Boss Mới</button>
+                    <button id="btnRageAttack" class="btn btn-danger">⚡ Kích Nộ Phản Công</button>
+                </div>
+
+                <!-- CÀI ĐẶT TĂNG MÁU THEO LEVEL -->
+                <div style="border-top: 1px solid #282a3c; padding-top: 14px; margin-top: 10px;">
+                    <div class="form-label" style="color: #ffd700; font-weight: 700;">📈 CẤU HÌNH TĂNG MÁU THEO LEVEL (EXPONENTIAL)</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                        <div>
+                            <label class="form-label">Máu khởi điểm Lv.1:</label>
+                            <input type="number" id="inputBaseStartHp" class="form-input" value="50000" step="5000" min="10000" />
+                        </div>
+                        <div>
+                            <label class="form-label">Độ tăng máu mỗi level:</label>
+                            <select id="selectGrowthRate" class="form-input">
+                                <option value="1.20">Dễ (+20% mỗi level)</option>
+                                <option value="1.35" selected>Tiêu chuẩn (+35% mỗi level)</option>
+                                <option value="1.50">Đại chiến (+50% mỗi level)</option>
+                                <option value="2.00">Ác Mộng (x2 mỗi level)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="btnSaveHpConfig" class="btn btn-warning" style="width: 100%; justify-content: center; margin-bottom: 14px;">Lưu Cấu Hình Tăng Máu</button>
+                </div>
+
+                <!-- CÀI ĐẶT HỒI MÁU KHI KHÔNG TƯƠNG TÁC -->
+                <div style="border-top: 1px solid #282a3c; padding-top: 14px; margin-top: 10px;">
+                    <div class="form-label" style="color: #00e676; font-weight: 700;">💚 HỒI MÁU KHI KHÔNG TƯƠNG TÁC (IDLE REGEN)</div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <input type="checkbox" id="checkAutoHeal" checked style="width: 16px; height: 16px; cursor: pointer;" />
+                        <label for="checkAutoHeal" style="font-size: 13px; cursor: pointer;">Bật tự động hồi máu khi người xem không tương tác</label>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                        <div>
+                            <label class="form-label">Thời gian chờ (giây):</label>
+                            <input type="number" id="inputHealDelay" class="form-input" value="5" min="2" max="30" />
+                        </div>
+                        <div>
+                            <label class="form-label">Tốc độ hồi (% máu/giây):</label>
+                            <input type="number" id="inputHealPercent" class="form-input" value="0.6" step="0.1" min="0.1" max="5.0" />
+                        </div>
+                    </div>
+                    <button id="btnSaveHealConfig" class="btn btn-success" style="width: 100%; justify-content: center;">Lưu Cấu Hình Hồi Máu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CỘT 2: BỘ GIẢ LẬP HÀNH ĐỘNG (SIMULATOR) -->
+        <div>
+            <div class="card">
+                <div class="card-title">🎮 BỘ GIẢ LẬP TƯƠNG TÁC (TEST OFFLINE)</div>
+                <div style="font-size: 12px; color: #aaa; margin-bottom: 14px;">
+                    Bấm các nút dưới đây để test chiêu thức và đồ họa ngay cả khi chưa mở Live thật!
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tên Người Chơi Giả Lập:</label>
+                    <input type="text" id="simUser" class="form-input" value="Hero_Gamer" />
+                </div>
+
+                <!-- 1. THẢ TIM -->
+                <div class="sim-section">
+                    <div class="sim-section-title">❤️ THẢ TIM (LIKES)</div>
+                    <div class="btn-grid">
+                        <button class="btn-sim" data-sim-type="like" data-count="1">❤️ Thả 1 Tim (-15 HP)</button>
+                        <button class="btn-sim" data-sim-type="like" data-count="10">💖 Thả 10 Tim (-150 HP)</button>
+                        <button class="btn-sim" data-sim-type="like" data-count="50">🔥 Mưa Tim 50 (-750 HP)</button>
+                    </div>
+                </div>
+
+                <!-- 2. BÌNH LUẬN (COMMENTS) -->
+                <div class="sim-section">
+                    <div class="sim-section-title">💬 BÌNH LUẬN RA CHIÊU (COMMENTS)</div>
+                    <div class="btn-grid">
+                        <button class="btn-sim" data-sim-type="comment" data-text="chem">🗡️ Chat "chem" (Kiếm)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="lua">🔥 Chat "lua" (Cầu Lửa)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="bang">❄️ Chat "bang" (Băng)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="set">⚡ Chat "set" (Sét)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="bom">💣 Chat "bom" (Bộc Phá)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="heal">✨ Chat "heal" (Hồi Năng)</button>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; margin-top: 10px;">
+                        <input type="text" id="simCommentCustom" class="form-input" placeholder="Nhập comment tùy ý để bắn chữ..." />
+                        <button id="btnSendCustomComment" class="btn btn-primary">Bắn Chữ</button>
+                    </div>
+                </div>
+
+                <!-- 3. TẶNG QUÀ (GIFTS - ULTIMATE MOVES) -->
+                <div class="sim-section">
+                    <div class="sim-section-title">🎁 TẶNG QUÀ - 9 ĐẠI CHIÊU THỨC HOÀNH TRÁNG (GIFTS)</div>
+                    <div class="btn-grid" style="grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));">
+                        <button class="btn-sim" data-sim-type="gift" data-gift-name="Hoa Hồng" data-diamonds="1" data-count="1">
+                            🌹 Hoa Hồng (1 xu)<br><small>Vạn Kiếm Quy Tông</small>
+                        </button>
+                        <button class="btn-sim" data-sim-type="gift" data-gift-name="Trái Tim" data-diamonds="10" data-count="1">
+                            💖 Trái Tim (10 xu)<br><small>Mũi Tên Cupid</small>
+                        </button>
+                        <button class="btn-sim" data-sim-type="gift" data-gift-name="Donut" data-diamonds="30" data-count="1">
+                            🍩 Donut (30 xu)<br><small>Bão Thiên Thạch</small>
+                        </button>
+                        <button class="btn-sim" data-sim-type="gift" data-gift-name="Tên Lửa" data-diamonds="100" data-count="1" style="border-color: #ff5252;">
+                            🚀 Tên Lửa (100 xu)<br><small>Nổ Nấm Nguyên Tử</small>
+                        </button>
+                        <button class="btn-sim" data-sim-type="gift" data-gift-name="Vương Miện" data-diamonds="199" data-count="1" style="border-color: #ffd700;">
+                            👑 Vương Miện (199 xu)<br><small>Thánh Kiếm Excalibur</small>
+                        </button>
+                        <button class="btn-sim" data-sim-type="gift" data-gift-name="Corgi" data-diamonds="299" data-count="1" style="border-color: #00e5ff;">
+                            🐶 Corgi (299 xu)<br><small>Bầy Sói Thần</small>
+                        </button>
+                        <button class="btn-sim" data-sim-type="gift" data-gift-name="Siêu Xe" data-diamonds="500" data-count="1" style="border-color: #ff3d00;">
+                            🏎️ Siêu Xe (500 xu)<br><small>Chiến Mã Nitro</small>
+                        </button>
+                        <button class="btn-sim" data-sim-type="gift" data-gift-name="Sư Tử" data-diamonds="1000" data-count="1" style="border-color: #ff9100; color: #ff9100;">
+                            🦁 Sư Tử (1000 xu)<br><small>Sư Tử Lửa Thần Thánh</small>
+                        </button>
+                        <button class="btn-sim" data-sim-type="gift" data-gift-name="Galaxy" data-diamonds="1000" data-count="1" style="border-color: #ffd700; color: #ffd700; font-weight: 900;">
+                            🌌 GALAXY (1000 xu)<br><small>Hố Đen & Rồng Thần</small>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. CỘNG ĐỒNG -->
+                <div class="sim-section">
+                    <div class="sim-section-title">🌟 THEO DÕI & CHIA SẺ</div>
+                    <div class="btn-grid">
+                        <button class="btn-sim" data-sim-type="follow">➕ Follow Kênh (Buff x2 DMG)</button>
+                        <button class="btn-sim" data-sim-type="share">📢 Chia Sẻ Live (Buff x1.5 DMG)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- TOAST THÔNG BÁO -->
+    <div id="toast" class="toast">Đã thực hiện thành công</div>
+
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

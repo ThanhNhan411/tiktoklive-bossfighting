@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Live - Đánh Quái Vật (Boss Fight)</title>
+    <link rel="stylesheet" href="/static/css/game.css">
+</head>
+<body>
+    <!-- CANVAS VẼ BOSS & HIỆU ỨNG CHIÊU THỨC -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- GIAO DIỆN HIỂN THỊ (UI OVERLAY) -->
+    <div class="ui-layer">
+        <!-- HEADER BOSS HP -->
+        <div class="boss-header-container">
+            <div class="boss-title-row">
+                <span id="levelBadge" class="level-badge">ẢI 1</span>
+                <span id="bossName" class="boss-name">HỎA LONG IGNIS</span>
+            </div>
+            <div class="boss-hp-frame">
+                <div id="bossHpBar" class="boss-hp-bar"></div>
+                <div id="bossHpText" class="boss-hp-text">50,000 / 50,000 HP (100%)</div>
+            </div>
+            <!-- THANH NỘ -->
+            <div class="boss-rage-container">
+                <span class="rage-label">⚡ NỘ</span>
+                <div class="boss-rage-frame">
+                    <div id="bossRageBar" class="boss-rage-bar"></div>
+                </div>
+            </div>
+            <!-- BUFF BANNER -->
+            <div id="buffBanner" class="buff-banner hidden">
+                <span>🔥 BUFF CHIẾN TRANH:</span>
+                <span id="buffTimer">30s (x2 DMG)</span>
+            </div>
+
+            <!-- REGEN ALERT -->
+            <div id="regenAlert" class="regen-alert hidden">
+                <span>⚠️ QUÁI VẬT ĐANG HỒI MÁU! THẢ TIM/CHAT ĐỂ NGĂN CHẶN!</span>
+            </div>
+        </div>
+
+        <!-- VIP BANNER (KHI CÓ QUÀ HOẶC ĐÒN VIP) -->
+        <div id="vipBanner" class="vip-banner hidden">
+            <img id="vipAvatar" class="vip-avatar" src="" alt="VIP" />
+            <div>
+                <div id="vipUser" class="vip-user">@User</div>
+                <div id="vipAction" class="vip-action">Tung chiêu!</div>
+            </div>
+        </div>
+
+        <!-- BẢNG XẾP HẠNG TOP DPS BÊN TRÁI -->
+        <div class="left-panel">
+            <div class="leaderboard-card">
+                <div class="card-title">🏆 TOP DŨNG SĨ</div>
+                <div id="leaderboardList" class="leaderboard-list">
+                    <div class="leaderboard-empty">Chưa có ai ra đòn!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BẢNG HƯỚNG DẪN CHIÊU THỨC BÊN PHẢI -->
+        <div class="right-panel">
+            <div class="skills-card">
+                <div class="card-title">⚔️ BẢNG CHIÊU THỨC</div>
+                <div class="skill-list">
+                    <div class="skill-row">
+                        <span class="skill-trigger">❤️ Thả tim</span>
+                        <span class="skill-desc">Bắn Đạn Ma Thuật</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">💬 "chem"</span>
+                        <span class="skill-desc">Trảm Phong Kiếm</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">💬 "lua"</span>
+                        <span class="skill-desc">Cầu Lửa Nổ</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">💬 "bang"</span>
+                        <span class="skill-desc">Băng Thiên Tiễn</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">💬 "set"</span>
+                        <span class="skill-desc">Lôi Thần Trừng Phạt</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">💬 "bom"</span>
+                        <span class="skill-desc">Bộc Phá Ma Thuật</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">🌹 Hoa Hồng (1x)</span>
+                        <span class="skill-desc">Vạn Kiếm Quy Tông</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">💖 Trái Tim (10x)</span>
+                        <span class="skill-desc">Mũi Tên Cupid</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">🚀 Tên Lửa (100x)</span>
+                        <span class="skill-desc">Nổ Nấm Nguyên Tử</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">👑 Vương Miện</span>
+                        <span class="skill-desc">Thánh Kiếm Excalibur</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">🦁 Sư Tử / Xe</span>
+                        <span class="skill-desc">Sư Tử Lửa / Siêu Xe</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">🌌 Galaxy (1000x)</span>
+                        <span class="skill-desc">HỐ ĐEN & RỒNG THẦN</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">➕ Follow/Share</span>
+                        <span class="skill-desc">BUFF x2 SÁT THƯƠNG</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMBAT FEED GÓC DƯỚI TRÁI -->
+        <div id="combatFeed" class="bottom-left-feed"></div>
+
+        <!-- TRẠNG THÁI KẾT NỐI GÓC DƯỚI PHẢI -->
+        <div id="connectionStatus" class="bottom-status status-disconnected">
+            Chưa kết nối TikTok Live
+        </div>
+    </div>
+
+    <!-- OVERLAY CHIẾN THẮNG (VICTORY) -->
+    <div id="victoryOverlay" class="victory-overlay hidden">
+        <div class="victory-title">👑 QUÁI VẬT BỊ TIÊU DIỆT!</div>
+        <div id="victoryBossName" class="victory-boss-name">Hỏa Long Ignis</div>
+        <div id="victoryKiller" class="victory-killer">Người kết liễu: @Hero</div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="/static/js/audio.js"></script>
+    <script src="/static/js/effects.js"></script>
+    <script src="/static/js/boss.js"></script>
+    <script src="/static/js/game.js"></script>
+</body>
+</html>
