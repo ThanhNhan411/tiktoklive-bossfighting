@@ -36,20 +36,34 @@ class PixelFXInstance {
         this.fps = this.meta.fps || 30;
         this.step = 1 / this.fps;
         this.acc = 0;
-        this.duration = this.meta.duration || 2.2;
+        
+        // Thời lượng hiệu ứng: dù effect có loop trong PixelFX thì trong game kỹ năng vẫn phải kết thúc sau 2.0s - 3.2s!
+        this.maxDuration = customOptions.duration || (this.meta.loop ? Math.min(this.meta.duration || 2.5, 3.0) : (this.meta.duration || 2.2));
         this.elapsed = 0;
+        this.hasStopped = false;
     }
 
     update(dt = 0.016) {
         if (this.isDead) return false;
         this.elapsed += dt;
         this.acc += dt;
+
+        // Trước khi kết thúc 0.4s -> Gọi stop() để PixelFX mờ dần tự nhiên
+        if (this.elapsed >= (this.maxDuration - 0.4) && !this.hasStopped) {
+            this.hasStopped = true;
+            if (this.inst && typeof this.inst.stop === 'function') {
+                this.inst.stop();
+            }
+        }
+
+        // Khi hết thời lượng hoặc inst đã done() -> Tiêu hủy dứt điểm hiệu ứng
+        if (this.elapsed >= this.maxDuration || (this.inst && typeof this.inst.done === 'function' && this.inst.done())) {
+            this.isDead = true;
+            return false;
+        }
+
         while (this.acc >= this.step) {
             this.acc -= this.step;
-            if (this.elapsed >= this.duration && !this.meta.loop) {
-                this.isDead = true;
-                return false;
-            }
             this.inst.update(this.step);
         }
 
@@ -167,7 +181,7 @@ class VisualSkillEffect {
         if (this.type === 'sword_slash') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(7, 12);
-                effectsManager.spawnPixelFX('doubleSlash', this.targetX, groundY, 3.2);
+                effectsManager.spawnPixelFX('doubleSlash', this.targetX, groundY, 3.2, { duration: 1.2 });
             }
         }
 
@@ -175,12 +189,12 @@ class VisualSkillEffect {
         else if (this.type === 'fireball') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(8, 14);
-                // Cầu lửa bay ngang ở tầm ngực
-                effectsManager.spawnPixelFX('fireball', originX + 50, groundY - 45, 2.8);
+                // Cầu lửa bay ngang ở tầm ngực và tự hủy sau 0.5s
+                effectsManager.spawnPixelFX('fireball', originX + 50, groundY - 45, 2.8, { duration: 0.5 });
             } else if (this.frame === 14) {
                 // Va chạm mặt sàn gây nổ lớn
                 effectsManager.triggerScreenShake(12, 16);
-                effectsManager.spawnPixelFX('bigExplosion', this.targetX, groundY, 2.9);
+                effectsManager.spawnPixelFX('bigExplosion', this.targetX, groundY, 2.9, { duration: 2.2 });
             }
         }
 
@@ -188,9 +202,9 @@ class VisualSkillEffect {
         else if (this.type === 'lightning') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(14, 18);
-                effectsManager.spawnPixelFX('lightningStrike', this.targetX, groundY, 3.0);
+                effectsManager.spawnPixelFX('lightningStrike', this.targetX, groundY, 3.0, { duration: 2.2 });
             } else if (this.frame === 16) {
-                effectsManager.spawnPixelFX('chainLightning', originX + 40, groundY - 20, 2.7);
+                effectsManager.spawnPixelFX('chainLightning', originX + 40, groundY - 20, 2.7, { duration: 1.8 });
             }
         }
 
@@ -198,8 +212,8 @@ class VisualSkillEffect {
         else if (this.type === 'ice_shard') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(6, 12);
-                effectsManager.spawnPixelFX('frostNova', this.targetX, groundY, 2.8);
-                effectsManager.spawnPixelFX('iceCrystal', this.targetX, groundY, 3.0);
+                effectsManager.spawnPixelFX('frostNova', this.targetX, groundY, 2.8, { duration: 2.2 });
+                effectsManager.spawnPixelFX('iceCrystal', this.targetX, groundY - 20, 3.0, { duration: 2.0 });
             }
         }
 
@@ -207,14 +221,14 @@ class VisualSkillEffect {
         else if (this.type === 'bomb_blast') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(14, 18);
-                effectsManager.spawnPixelFX('barrelExplosion', this.targetX, groundY, 3.0);
+                effectsManager.spawnPixelFX('barrelExplosion', this.targetX, groundY, 3.0, { duration: 2.2 });
             }
         }
 
         // 6. Thả Tim / Đạn Ma Thuật (Charmed Sparkles từ PixelFX)
         else if (this.type === 'heart_barrage' || this.type === 'magic_bullet') {
             if (this.frame === 1) {
-                effectsManager.spawnPixelFX('charmed', this.targetX, groundY - 35, 3.2);
+                effectsManager.spawnPixelFX('charmed', this.targetX, groundY - 35, 3.2, { duration: 1.8 });
             }
         }
 
@@ -222,8 +236,8 @@ class VisualSkillEffect {
         else if (this.type === 'gift_rose' || this.type === 'blade_storm') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(8, 14);
-                effectsManager.spawnPixelFX('cherryBlossoms', this.targetX, groundY - 70, 2.8);
-                effectsManager.spawnPixelFX('doubleSlash', this.targetX, groundY, 3.6);
+                effectsManager.spawnPixelFX('cherryBlossoms', this.targetX, groundY - 70, 2.8, { duration: 2.5 });
+                effectsManager.spawnPixelFX('doubleSlash', this.targetX, groundY, 3.6, { duration: 1.5 });
             }
         }
 
@@ -231,7 +245,7 @@ class VisualSkillEffect {
         else if (this.type === 'gift_heart') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(10, 14);
-                effectsManager.spawnPixelFX('charmed', this.targetX, groundY - 35, 4.2);
+                effectsManager.spawnPixelFX('charmed', this.targetX, groundY - 35, 4.2, { duration: 2.2 });
             }
         }
 
@@ -239,7 +253,7 @@ class VisualSkillEffect {
         else if (this.type === 'gift_donut' || this.type === 'meteor_shower') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('meteor', this.targetX, groundY, 3.4);
+                effectsManager.spawnPixelFX('meteor', this.targetX, groundY, 3.4, { duration: 2.5 });
             }
         }
 
@@ -247,7 +261,7 @@ class VisualSkillEffect {
         else if (this.type === 'gift_rocket') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(22, 28);
-                effectsManager.spawnPixelFX('nuke', this.targetX, groundY, 3.6);
+                effectsManager.spawnPixelFX('nuke', this.targetX, groundY, 3.6, { duration: 3.0 });
             }
         }
 
@@ -255,7 +269,7 @@ class VisualSkillEffect {
         else if (this.type === 'gift_crown') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(18, 24);
-                effectsManager.spawnPixelFX('smite', this.targetX, groundY, 3.6);
+                effectsManager.spawnPixelFX('smite', this.targetX, groundY, 3.6, { duration: 2.5 });
             }
         }
 
@@ -263,7 +277,7 @@ class VisualSkillEffect {
         else if (this.type === 'gift_corgi') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(12, 16);
-                effectsManager.spawnPixelFX('dashStrike', originX, groundY, 3.2);
+                effectsManager.spawnPixelFX('dashStrike', originX, groundY, 3.2, { duration: 2.0 });
             }
         }
 
@@ -271,8 +285,8 @@ class VisualSkillEffect {
         else if (this.type === 'gift_car') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('dashStrike', originX, groundY, 3.2);
-                effectsManager.spawnPixelFX('fireTornado', this.targetX, groundY, 3.0);
+                effectsManager.spawnPixelFX('dashStrike', originX, groundY, 3.2, { duration: 2.0 });
+                effectsManager.spawnPixelFX('fireTornado', this.targetX, groundY, 3.0, { duration: 2.2 });
             }
         }
 
@@ -280,7 +294,7 @@ class VisualSkillEffect {
         else if (this.type === 'gift_lion') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(18, 24);
-                effectsManager.spawnPixelFX('fireTornado', this.targetX, groundY, 3.8);
+                effectsManager.spawnPixelFX('fireTornado', this.targetX, groundY, 3.8, { duration: 2.5 });
             }
         }
 
@@ -288,9 +302,9 @@ class VisualSkillEffect {
         else if (this.type === 'gift_galaxy' || this.type === 'ultimate_dragon') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('blackHole', this.targetX, groundY, 3.8);
+                effectsManager.spawnPixelFX('blackHole', this.targetX, groundY, 3.8, { duration: 3.2 });
             } else if (this.frame === 30) {
-                effectsManager.spawnPixelFX('arcaneBeam', originX + 40, groundY - 25, 3.4);
+                effectsManager.spawnPixelFX('arcaneBeam', originX + 40, groundY - 25, 3.4, { duration: 2.2 });
             }
         }
 

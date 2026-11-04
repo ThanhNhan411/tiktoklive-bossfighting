@@ -48,53 +48,53 @@ body {
     flex-direction: column;
     align-items: center;
     width: 100%;
-    max-width: 750px;
+    max-width: 680px;
     margin: 0 auto;
 }
 
 .boss-title-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
+    gap: 8px;
+    margin-bottom: 6px;
 }
 
 .level-badge {
     background: linear-gradient(135deg, #ff9100, #ff3d00);
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 14px;
+    padding: 3px 10px;
+    border-radius: 14px;
+    font-size: 11px;
     font-weight: 900;
-    letter-spacing: 1px;
-    box-shadow: 0 0 10px rgba(255, 61, 0, 0.6);
+    letter-spacing: 0.8px;
+    box-shadow: 0 0 8px rgba(255, 61, 0, 0.6);
 }
 
 .boss-name {
     font-family: 'Bungee', sans-serif;
-    font-size: 28px;
+    font-size: 20px;
     color: #fff;
-    text-shadow: 0 0 15px #ff1744, 0 0 30px #d50000;
-    letter-spacing: 2px;
+    text-shadow: 0 0 12px #ff1744, 0 0 24px #d50000;
+    letter-spacing: 1.5px;
 }
 
 .boss-hp-frame {
     width: 100%;
     background: rgba(10, 4, 20, 0.88);
-    border: 2.5px solid rgba(255, 215, 0, 0.7);
-    border-radius: 14px;
-    padding: 3px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.85), inset 0 0 15px rgba(0, 0, 0, 0.9);
+    border: 2px solid rgba(255, 215, 0, 0.75);
+    border-radius: 10px;
+    padding: 2.5px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.85), inset 0 0 10px rgba(0, 0, 0, 0.9);
     position: relative;
     overflow: hidden;
 }
 
 .boss-hp-ghost {
     position: absolute;
-    top: 3px;
-    left: 3px;
-    bottom: 3px;
+    top: 2.5px;
+    left: 2.5px;
+    bottom: 2.5px;
     width: 100%;
-    border-radius: 8px;
+    border-radius: 6px;
     background: linear-gradient(90deg, #ff3d00, #ff9100);
     opacity: 0.8;
     transition: width 0.45s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -103,11 +103,11 @@ body {
 
 .boss-hp-bar {
     position: relative;
-    height: 28px;
+    height: 20px;
     width: 100%;
-    border-radius: 8px;
+    border-radius: 6px;
     background: linear-gradient(90deg, #00e676, #76ff03);
-    box-shadow: 0 0 15px rgba(118, 255, 3, 0.7);
+    box-shadow: 0 0 12px rgba(118, 255, 3, 0.7);
     transition: width 0.12s linear, background 0.3s;
     z-index: 3;
 }
@@ -117,36 +117,36 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 900;
     color: #ffffff;
-    text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 8px rgba(0, 0, 0, 0.95);
-    letter-spacing: 1px;
+    text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 6px rgba(0, 0, 0, 0.95);
+    letter-spacing: 0.8px;
     z-index: 5;
     white-space: nowrap;
 }
 
 /* THANH NỘ CỦA BOSS */
 .boss-rage-container {
-    width: 85%;
+    width: 80%;
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 6px;
+    gap: 6px;
+    margin-top: 5px;
 }
 
 .rage-label {
-    font-size: 11px;
+    font-size: 9.5px;
     font-weight: 900;
     color: #ff5252;
-    text-shadow: 0 0 8px #ff1744;
+    text-shadow: 0 0 6px #ff1744;
 }
 
 .boss-rage-frame {
     flex: 1;
-    height: 8px;
+    height: 6px;
     background: rgba(0, 0, 0, 0.6);
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid rgba(255, 82, 82, 0.4);
     overflow: hidden;
 }
@@ -155,7 +155,7 @@ body {
     height: 100%;
     width: 0%;
     background: linear-gradient(90deg, #ff9100, #ff1744);
-    box-shadow: 0 0 8px #ff1744;
+    box-shadow: 0 0 6px #ff1744;
     transition: width 0.2s ease-out;
 }
 
@@ -165,20 +165,20 @@ body {
     top: auto;
     left: auto;
     transform: none;
-    margin-top: 8px;
+    margin-top: 5px;
     background: rgba(0, 48, 20, 0.92);
-    border: 2px solid #00e676;
+    border: 1.5px solid #00e676;
     color: #00e676;
     font-weight: 900;
-    font-size: 12.5px;
-    padding: 6px 18px;
-    border-radius: 20px;
-    box-shadow: 0 0 20px rgba(0, 230, 118, 0.6);
+    font-size: 11px;
+    padding: 3px 14px;
+    border-radius: 16px;
+    box-shadow: 0 0 15px rgba(0, 230, 118, 0.6);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     animation: regenBlink 0.8s infinite alternate;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.4px;
     z-index: 30;
 }
 
@@ -190,17 +190,17 @@ body {
 /* BUFF BANNER */
 .buff-banner {
     position: relative;
-    margin-top: 8px;
+    margin-top: 5px;
     background: linear-gradient(90deg, #ffab00, #ffd600);
     color: #000;
     font-weight: 900;
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 13px;
-    box-shadow: 0 0 20px rgba(255, 214, 0, 0.8);
+    padding: 3px 14px;
+    border-radius: 16px;
+    font-size: 11px;
+    box-shadow: 0 0 15px rgba(255, 214, 0, 0.8);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     animation: pulse 1s infinite alternate;
     z-index: 30;
 }
@@ -213,20 +213,20 @@ body {
 /* VIP BANNER (KHI TẶNG QUÀ HOẶC ĐÒN VIP) - HIỆN GỌN GÀNG, KHÔNG CHE BOSS HAY HP */
 .vip-banner {
     position: absolute;
-    top: 135px;
+    top: 100px;
     left: 50%;
     transform: translateX(-50%);
     background: linear-gradient(135deg, rgba(30, 8, 55, 0.96), rgba(10, 2, 25, 0.96));
-    border: 2px solid #ffd700;
-    padding: 8px 22px;
-    border-radius: 40px;
+    border: 1.5px solid #ffd700;
+    padding: 5px 14px;
+    border-radius: 25px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    box-shadow: 0 0 35px rgba(255, 215, 0, 0.7), inset 0 0 15px rgba(255, 215, 0, 0.25);
+    gap: 8px;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.6), inset 0 0 10px rgba(255, 215, 0, 0.2);
     transition: all 0.3s ease;
     z-index: 60;
-    max-width: 440px;
+    max-width: 340px;
     width: auto;
 }
 
@@ -235,99 +235,103 @@ body {
 }
 
 @keyframes bannerDrop {
-    0% { transform: translateY(-40px) scale(0.7); opacity: 0; }
-    60% { transform: translateY(6px) scale(1.05); opacity: 1; }
+    0% { transform: translateY(-30px) scale(0.7); opacity: 0; }
+    60% { transform: translateY(4px) scale(1.03); opacity: 1; }
     100% { transform: translateY(0) scale(1); opacity: 1; }
 }
 
 .vip-avatar {
-    width: 56px;
-    height: 56px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    border: 3px solid #ffd700;
-    box-shadow: 0 0 16px #ffd700;
+    border: 2px solid #ffd700;
+    box-shadow: 0 0 10px #ffd700;
+    flex-shrink: 0;
 }
 
 .vip-user {
     font-weight: 900;
     color: #ffd700;
-    font-size: 18px;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
-    letter-spacing: 0.5px;
+    font-size: 12.5px;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    letter-spacing: 0.4px;
 }
 
 .vip-action {
-    font-size: 14px;
+    font-size: 10.5px;
     font-weight: 700;
     color: #ffffff;
-    text-shadow: 0 2px 4px #000;
+    text-shadow: 0 1px 3px #000;
 }
 
 /* BẢNG XẾP HẠNG TOP DPS */
 .left-panel {
     position: absolute;
-    left: 24px;
-    top: 130px;
-    width: 250px;
+    left: 20px;
+    top: 95px;
+    width: 230px;
 }
 
 .leaderboard-card {
-    background: rgba(13, 3, 26, 0.8);
+    background: rgba(13, 3, 26, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(8px);
-    border-radius: 16px;
-    padding: 14px;
+    border-radius: 12px;
+    padding: 10px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
 }
 
 .card-title {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 900;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
     color: #ffcc00;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
 }
 
 .leaderboard-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .leaderboard-empty {
-    font-size: 12px;
+    font-size: 11px;
     color: #888;
     text-align: center;
-    padding: 10px 0;
+    padding: 8px 0;
 }
 
 .leaderboard-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 6px 8px;
-    border-radius: 8px;
+    gap: 8px;
+    padding: 4px 6px;
+    border-radius: 6px;
     background: rgba(255, 255, 255, 0.05);
 }
 
 .leaderboard-item.rank-1 {
     background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), transparent);
-    border-left: 3px solid #ffd700;
+    border-left: 2.5px solid #ffd700;
 }
 
 .rank-num {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 900;
+    min-width: 16px;
+    text-align: center;
 }
 
 .user-avatar {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
 }
 
 .user-info {
@@ -337,16 +341,16 @@ body {
 }
 
 .user-name {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 140px;
+    max-width: 125px;
 }
 
 .user-dmg {
-    font-size: 11px;
+    font-size: 10px;
     color: #ff9100;
     font-weight: 900;
 }
@@ -354,17 +358,17 @@ body {
 /* HƯỚNG DẪN CHIÊU THỨC (SKILL GUIDE) */
 .right-panel {
     position: absolute;
-    right: 24px;
-    top: 130px;
-    width: 260px;
+    right: 20px;
+    top: 95px;
+    width: 240px;
 }
 
 .skills-card {
-    background: rgba(13, 3, 26, 0.8);
+    background: rgba(13, 3, 26, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(8px);
-    border-radius: 16px;
-    padding: 14px;
+    border-radius: 12px;
+    padding: 10px;
 }
 
 .skill-list {
@@ -524,63 +528,71 @@ body {
 /* ========================================================
    THIẾT KẾ BỐ CỤC CHUẨN MÀN HÌNH DỌC 9:16 (TIKTOK LIVE STREAM)
    Tối ưu hiển thị cho OBS / TikTok Live Studio (1080 x 1920)
+   Thu nhỏ font chữ, kích thước thanh máu, tên boss, thông báo quà tặng
+   Bảng xếp hạng hiển thị rõ ràng bên dưới sàn đấu
    ======================================================== */
 @media (max-aspect-ratio: 1/1) {
-    /* Đẩy phần Header xuống dưới một khoảng an toàn (tránh bị che bởi avatar/live info của TikTok Mobile) */
     .ui-layer {
-        padding: 16px 12px;
+        padding: 10px 8px;
     }
 
     .boss-header-container {
-        max-width: 96%;
-        margin-top: 115px; /* Vùng an toàn chuẩn tránh che bởi header TikTok Mobile */
+        max-width: 95%;
+        margin-top: 55px; /* Vùng an toàn chuẩn tránh che bởi header streamer TikTok Mobile */
     }
 
     .boss-title-row {
-        gap: 8px;
-        margin-bottom: 6px;
+        gap: 6px;
+        margin-bottom: 4px;
     }
 
     .level-badge {
-        font-size: 12.5px;
-        padding: 3px 10px;
+        font-size: 10px;
+        padding: 2px 7px;
+        border-radius: 8px;
     }
 
     .boss-name {
-        font-size: 24px;
-        letter-spacing: 1.5px;
+        font-size: 15px;
+        letter-spacing: 1px;
     }
 
     .boss-hp-frame {
-        border-radius: 12px;
-        padding: 3px;
-        border-width: 2px;
+        border-radius: 8px;
+        padding: 2px;
+        border-width: 1.5px;
     }
 
     .boss-hp-ghost {
-        top: 3px;
-        left: 3px;
-        bottom: 3px;
+        top: 2px;
+        left: 2px;
+        bottom: 2px;
+        border-radius: 5px;
     }
 
     .boss-hp-bar {
-        height: 26px;
-        border-radius: 7px;
+        height: 16px;
+        border-radius: 5px;
     }
 
     .boss-hp-text {
-        font-size: 12.5px;
+        font-size: 9.5px;
+        font-weight: 800;
         width: 100%;
         text-align: center;
     }
 
     .boss-rage-container {
-        width: 92%;
-        margin-top: 5px;
+        width: 86%;
+        margin-top: 3px;
+    }
+
+    .rage-label {
+        font-size: 8.5px;
     }
 
     .boss-rage-frame {
-        height: 8px;
+        height: 4.5px;
     }
 
     .regen-alert {
@@ -588,101 +600,104 @@ body {
         top: auto;
         left: auto;
         transform: none;
-        margin-top: 8px;
-        font-size: 11.5px;
-        padding: 5px 12px;
+        margin-top: 4px;
+        font-size: 9.5px;
+        padding: 2px 8px;
         width: 92%;
         justify-content: center;
         text-align: center;
     }
 
     .buff-banner {
-        font-size: 12px;
-        padding: 4px 12px;
-        margin-top: 6px;
+        font-size: 9.5px;
+        padding: 2px 8px;
+        margin-top: 4px;
     }
 
+    /* THÔNG BÁO QUÀ TẶNG VIP: GỌN GÀNG NGAY DƯỚI THANH MÁU, KHÔNG CHE KHUẤT SÀN ĐẤU */
     .vip-banner {
-        top: 240px;
+        top: 120px;
         left: 50%;
         transform: translateX(-50%);
-        padding: 6px 18px;
-        gap: 10px;
-        max-width: 92%;
-        width: auto;
+        padding: 3px 10px;
+        gap: 6px;
+        max-width: 280px;
+        border-radius: 18px;
+        border-width: 1.5px;
     }
 
     .vip-avatar {
-        width: 42px;
-        height: 42px;
+        width: 24px;
+        height: 24px;
+        border-width: 1.5px;
     }
 
     .vip-user {
-        font-size: 14.5px;
+        font-size: 11px;
     }
 
     .vip-action {
-        font-size: 11.5px;
+        font-size: 9px;
     }
 
     /* ĐỊNH VỊ BẢNG XẾP HẠNG & BẢNG KỸ NĂNG NẰM DƯỚI ĐẤU TRƯỜNG BOSS (HIỂN THỊ RÕ RÀNG KHÔNG BỊ CHE) */
     .left-panel {
         position: absolute;
-        left: 10px;
-        top: 51%;
-        width: calc(56% - 14px);
-        max-height: 29%;
+        left: 8px;
+        top: 48%;
+        width: calc(54% - 10px);
+        max-height: 35%;
         z-index: 25;
     }
 
     .right-panel {
         position: absolute;
-        right: 10px;
-        top: 51%;
-        width: calc(44% - 14px);
-        max-height: 29%;
+        right: 8px;
+        top: 48%;
+        width: calc(46% - 10px);
+        max-height: 35%;
         z-index: 25;
     }
 
     .leaderboard-card {
-        padding: 8px 10px;
-        border-radius: 14px;
+        padding: 6px 8px;
+        border-radius: 10px;
         background: rgba(10, 3, 24, 0.94);
         border: 1.5px solid rgba(255, 215, 0, 0.45);
-        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.85);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.85);
         max-height: 100%;
         display: flex;
         flex-direction: column;
     }
 
     .skills-card {
-        padding: 8px 10px;
-        border-radius: 14px;
+        padding: 6px 8px;
+        border-radius: 10px;
         background: rgba(10, 3, 24, 0.92);
         border: 1.5px solid rgba(0, 229, 255, 0.35);
-        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.85);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.85);
         max-height: 100%;
         display: flex;
         flex-direction: column;
     }
 
     .card-title {
-        font-size: 12.5px;
-        margin-bottom: 6px;
+        font-size: 10.5px;
+        margin-bottom: 4px;
         gap: 4px;
         font-weight: 900;
     }
 
     .leaderboard-list {
-        gap: 5px;
+        gap: 3px;
         overflow-y: auto;
-        max-height: 185px;
+        max-height: 180px;
     }
 
     .leaderboard-item {
-        padding: 4px 8px;
-        gap: 8px;
-        border-radius: 8px;
+        padding: 2.5px 5px;
+        gap: 5px;
+        border-radius: 5px;
         background: rgba(255, 255, 255, 0.05);
     }
 
@@ -702,17 +717,17 @@ body {
     }
 
     .rank-num {
-        font-size: 14px;
+        font-size: 11px;
         font-weight: 900;
-        min-width: 18px;
+        min-width: 14px;
         text-align: center;
     }
 
     .user-avatar {
-        width: 28px;
-        height: 28px;
+        width: 20px;
+        height: 20px;
         border-radius: 50%;
-        border: 1.5px solid rgba(255, 215, 0, 0.6);
+        border: 1px solid rgba(255, 215, 0, 0.6);
         flex-shrink: 0;
     }
 
@@ -725,7 +740,7 @@ body {
     }
 
     .user-name {
-        font-size: 11.5px;
+        font-size: 9.5px;
         font-weight: 800;
         color: #ffffff;
         white-space: nowrap;
@@ -735,34 +750,35 @@ body {
     }
 
     .user-dmg {
-        font-size: 11px;
+        font-size: 9px;
         font-weight: 900;
         color: #ffb300;
         white-space: nowrap;
-        letter-spacing: 0.3px;
+        letter-spacing: 0.2px;
     }
 
     .skill-list {
-        gap: 4px;
+        gap: 2.5px;
         overflow-y: auto;
-        max-height: 185px;
+        max-height: 180px;
     }
 
     .skill-row {
-        padding: 3.5px 6px;
-        font-size: 10px;
-        border-radius: 5px;
+        padding: 2px 4px;
+        font-size: 8.5px;
+        border-radius: 4px;
     }
 
     .skill-trigger {
         font-weight: 800;
         color: #00e5ff;
         white-space: nowrap;
+        font-size: 8.5px;
     }
 
     .skill-desc {
         color: #ffd700;
-        font-size: 9.5px;
+        font-size: 8px;
         font-weight: 800;
         text-align: right;
         white-space: nowrap;
@@ -772,35 +788,35 @@ body {
 
     /* KHU VỰC DƯỚI CÙNG (Dành cho vùng comment tự nhiên của TikTok) */
     .bottom-left-feed {
-        bottom: 14px;
-        left: 12px;
-        max-width: 68%;
-        gap: 4px;
+        bottom: 8px;
+        left: 8px;
+        max-width: 65%;
+        gap: 2px;
     }
 
     .feed-item {
-        font-size: 11px;
-        padding: 3px 8px;
+        font-size: 9px;
+        padding: 2px 5px;
     }
 
     .bottom-status {
-        bottom: 14px;
-        right: 12px;
-        font-size: 10px;
-        padding: 4px 10px;
+        bottom: 8px;
+        right: 8px;
+        font-size: 8.5px;
+        padding: 2px 7px;
     }
 
     .victory-title {
-        font-size: 36px;
-        letter-spacing: 2px;
+        font-size: 30px;
+        letter-spacing: 1.5px;
     }
 
     .victory-boss-name {
-        font-size: 20px;
+        font-size: 16px;
     }
 
     .victory-killer {
-        font-size: 15px;
-        padding: 6px 18px;
+        font-size: 13px;
+        padding: 4px 14px;
     }
 }

@@ -72,7 +72,7 @@ class BossRenderer {
         }
     }
 
-    draw(ctx, centerX, centerY) {
+    draw(ctx, centerX, groundY) {
         this.update();
         ctx.save();
 
@@ -80,56 +80,73 @@ class BossRenderer {
         const img = this.images[bType] || this.images['dragon'];
         const isLoaded = this.imagesLoaded[bType] || this.imagesLoaded['dragon'];
 
-        // Độ bồng bềnh thở của quái vật
-        const breathY = Math.sin(this.time * 1.5) * 12;
-        const breathScale = 1.0 + Math.sin(this.time * 2.0) * 0.025;
-        const x = centerX;
-        const y = centerY + breathY;
+        // Kích thước hiển thị boss cân đối với sàn đấu
+        const isPortrait = this.canvas.height > this.canvas.width;
+        const baseSize = isPortrait ? Math.min(this.canvas.width * 0.44, 280) : 340;
+        const breathScale = 1.0 + Math.sin(this.time * 2.0) * 0.015;
+        const bossSize = baseSize * breathScale;
+
+        // Quái vật bay (Rồng, Phượng Hoàng, Băng Thần) lơ lửng nhẹ trên sàn, quái vật bộ đứng vững trên sàn đấu
+        const isFlying = (bType === 'dragon' || bType === 'phoenix' || bType === 'frost');
+        const hoverOffset = isFlying ? -22 : 0;
+        const breathY = isFlying ? Math.sin(this.time * 2.0) * 8 : Math.sin(this.time * 2.0) * 3;
+
+        // Căn chỉnh đáy chân boss chạm chuẩn mặt đất groundY (ảnh 1024x1024 có biên dưới ~25px)
+        const bottomMargin = bossSize * 0.025;
+        const drawX = centerX - bossSize / 2;
+        const drawY = groundY - bossSize + bottomMargin + hoverOffset + breathY;
 
         // Giật rung nhẹ khi trúng đòn
+        let shakeX = 0;
+        let shakeY = 0;
         if (this.hurtFlash > 0) {
-            const shakeX = (Math.random() - 0.5) * 16 * this.hurtFlash;
-            const shakeY = (Math.random() - 0.5) * 14 * this.hurtFlash;
-            ctx.translate(shakeX, shakeY);
+            shakeX = (Math.random() - 0.5) * 14 * this.hurtFlash;
+            shakeY = (Math.random() - 0.5) * 10 * this.hurtFlash;
         }
+
+        const renderX = drawX + shakeX;
+        const renderY = drawY + shakeY;
+        const centerBossY = renderY + bossSize * 0.52;
 
         // Nếu boss chết -> Tan biến dần
         if (this.bossData.is_dead) {
             ctx.globalAlpha = Math.max(0, this.deathProgress);
         }
 
-        // 1. VẼ HÀO QUANG PHÍA SAU BOSS (TỐI ƯU KHÔNG DÙNG SHADOWBLUR)
-        this._drawMagicAura(ctx, x, y, bType);
+        // 1. VẼ BÓNG TRÊN MẶT SÀN
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.beginPath();
+        const shadowScale = isFlying ? Math.max(0.6, 0.9 - (-hoverOffset / 60)) : 1.0;
+        ctx.ellipse(centerX, groundY - 2, (bossSize * 0.32) * shadowScale, 9 * shadowScale, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
 
-        // 2. VẼ BOSS (TỐI ƯU KHÔNG DÙNG CTX.FILTER)
-        const isPortrait = this.canvas.height > this.canvas.width;
-        const baseSize = isPortrait ? Math.min(this.canvas.width * 0.48, 380) : 420;
-        const bossSize = baseSize * breathScale;
+        // 2. VẼ HÀO QUANG PHÍA SAU BOSS
+        this._drawMagicAura(ctx, centerX, centerBossY, bType);
 
+        // 3. VẼ HÌNH ẢNH BOSS ĐỨNG TRÊN MẶT ĐẤT
         if (isLoaded && img.complete) {
             ctx.save();
-            ctx.translate(x, y);
+            ctx.drawImage(img, renderX, renderY, bossSize, bossSize);
 
-            // Vẽ ảnh Boss
-            ctx.drawImage(img, -bossSize / 2, -bossSize / 2, bossSize, bossSize);
-
-            // Phủ màu đỏ chói khi bị chém bằng source-atop (Cực nhẹ, 0 lag)
+            // Phủ màu đỏ chói khi bị chém
             if (this.hurtFlash > 0) {
                 ctx.globalCompositeOperation = 'source-atop';
                 ctx.fillStyle = `rgba(255, 30, 60, ${this.hurtFlash * 0.6})`;
-                ctx.fillRect(-bossSize / 2, -bossSize / 2, bossSize, bossSize);
+                ctx.fillRect(renderX, renderY, bossSize, bossSize);
             }
 
             // Phủ màu xanh lá khi hồi máu
             if (this.healGlow > 0) {
                 ctx.globalCompositeOperation = 'source-atop';
                 ctx.fillStyle = `rgba(0, 230, 118, ${this.healGlow * 0.45})`;
-                ctx.fillRect(-bossSize / 2, -bossSize / 2, bossSize, bossSize);
+                ctx.fillRect(renderX, renderY, bossSize, bossSize);
             }
 
             ctx.restore();
         } else {
-            this._drawFallback(ctx, x, y, bossSize);
+            this._drawFallback(ctx, centerX, centerBossY, bossSize);
         }
 
         ctx.restore();

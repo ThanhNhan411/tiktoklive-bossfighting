@@ -108,7 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const playerY = groundY;
         // Boss đứng bên PHẢI
         const bossX = isPortrait ? canvas.width * 0.77 : canvas.width * 0.78;
-        const bossY = isPortrait ? groundY - 65 : groundY - 75;
+        // Tâm ngực quái vật cho các chiêu thức bay tới (ngang thân boss)
+        const bossY = isPortrait ? groundY - 100 : groundY - 120;
 
         return { isPortrait, groundY, playerX, playerY, bossX, bossY };
     }
@@ -185,25 +186,45 @@ document.addEventListener('DOMContentLoaded', () => {
         lastPlayersJson = jsonStr;
 
         leaderboardListEl.innerHTML = '';
-        if (players.length === 0) {
+        if (!players || players.length === 0) {
             leaderboardListEl.innerHTML = '<div class="leaderboard-empty">Chưa có ai ra đòn!</div>';
             return;
         }
+
+        const fallbackAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30'><circle cx='15' cy='15' r='15' fill='%23ffd700'/></svg>";
 
         players.slice(0, 5).forEach((p, idx) => {
             const item = document.createElement('div');
             item.className = `leaderboard-item rank-${idx + 1}`;
             const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `${idx + 1}`));
-            const avatarSrc = p.avatar || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><circle cx="15" cy="15" r="15" fill="%23ffd700"/></svg>';
 
-            item.innerHTML = `
-                <span class="rank-num">${medal}</span>
-                <img class="user-avatar" src="${avatarSrc}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'30\\' height=\\'30\\'><circle cx=\\'15\\' cy=\\'15\\' r=\\'15\\' fill=\\'%23ffd700\\'/></svg>'" />
-                <div class="user-info">
-                    <span class="user-name">@${p.nickname}</span>
-                    <span class="user-dmg">${formatDmg(p.damage)}</span>
-                </div>
-            `;
+            const rankSpan = document.createElement('span');
+            rankSpan.className = 'rank-num';
+            rankSpan.textContent = medal;
+
+            const img = document.createElement('img');
+            img.className = 'user-avatar';
+            img.src = p.avatar || fallbackAvatar;
+            img.onerror = () => { img.onerror = null; img.src = fallbackAvatar; };
+
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'user-info';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'user-name';
+            nameSpan.textContent = `@${p.nickname || 'Hiệp sĩ'}`;
+
+            const dmgSpan = document.createElement('span');
+            dmgSpan.className = 'user-dmg';
+            dmgSpan.textContent = formatDmg(p.damage);
+
+            infoDiv.appendChild(nameSpan);
+            infoDiv.appendChild(dmgSpan);
+
+            item.appendChild(rankSpan);
+            item.appendChild(img);
+            item.appendChild(infoDiv);
+
             leaderboardListEl.appendChild(item);
         });
     }
@@ -433,13 +454,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const platformWidth = isPortrait ? canvasWidth * 0.94 : canvasWidth * 0.88;
         const platformX = (canvasWidth - platformWidth) / 2;
         
-        // Tileset 16x16 pixel (80 x 48: 5 cột x 3 hàng)
-        // Cột 0: Mép trái (sx=0)
-        // Cột 1..3: Thân đá (sx=16, 32, 48)
-        // Cột 4: Mép phải (sx=64)
-        // Hàng 0: Mặt sàn trên (sy=0)
-        // Hàng 1: Đá giữa (sy=16)
-        // Hàng 2: Móng đá nhọn đáy (sy=32)
+        // Tileset 48x48 (3 cột x 3 hàng, mỗi tile 16x16 pixel)
+        // Cột 0: Mép trái (sx = 0)
+        // Cột 1: Thân giữa liền mạch (sx = 16)
+        // Cột 2: Mép phải (sx = 32)
+        // Hàng 0: Mặt sàn trên cùng (sy = 0)
+        // Hàng 1: Thân đất đá giữa (sy = 16)
+        // Hàng 2: Đáy đá đặc nguyên khối 100% không lỗ rỗng (sy = 32)
         const tileSize = 16;
         const scale = isPortrait ? 2.6 : 3.0;
         const drawTileSize = tileSize * scale;
@@ -454,23 +475,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (tilesetLoaded && tilesetImg.complete) {
             const cols = Math.ceil(platformWidth / drawTileSize);
-            const midVariants = [16, 16, 32, 16, 48];
 
             for (let c = 0; c < cols; c++) {
                 const tx = platformX + c * drawTileSize;
 
-                let sx = midVariants[c % midVariants.length];
-                if (c === 0) sx = 0; // Mép trái
-                else if (c === cols - 1) sx = 64; // Mép phải
+                // sx: 0 = mép trái, 32 = mép phải, 16 = thân đá giữa
+                let sx = 16;
+                if (c === 0) sx = 0;
+                else if (c === cols - 1) sx = 32;
 
-                // Hàng 0: Mặt sàn trên (tiếp giáp chuẩn xác tại groundY)
-                ctx.drawImage(tilesetImg, sx, 0, tileSize, tileSize, tx, groundY - 4, drawTileSize, drawTileSize);
+                // Hàng 0: Mặt sàn trên (chân nhân vật và boss đứng tại groundY)
+                ctx.drawImage(tilesetImg, sx, 0, tileSize, tileSize, tx, groundY - 2, drawTileSize, drawTileSize);
 
-                // Hàng 1: Thân đá
-                ctx.drawImage(tilesetImg, sx, 16, tileSize, tileSize, tx, groundY - 4 + drawTileSize, drawTileSize, drawTileSize);
+                // Hàng 1: Thân đất đá liền khối
+                ctx.drawImage(tilesetImg, sx, 16, tileSize, tileSize, tx, groundY - 2 + drawTileSize, drawTileSize, drawTileSize);
 
-                // Hàng 2: Móng đá nhọn đáy
-                ctx.drawImage(tilesetImg, sx, 32, tileSize, tileSize, tx, groundY - 4 + drawTileSize * 2, drawTileSize, drawTileSize);
+                // Hàng 2: Đáy đá đặc nguyên khối (100% không loang lổ)
+                ctx.drawImage(tilesetImg, sx, 32, tileSize, tileSize, tx, groundY - 2 + drawTileSize * 2, drawTileSize, drawTileSize);
             }
         } else {
             // Fallback khi ảnh đang tải
@@ -563,8 +584,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. Vẽ Dũng Sĩ (BÊN TRÁI) - Sprite Sheet Samurai Pixel Art & Avatar TikTok
         playerRenderer.draw(ctx, playerX, playerY);
 
-        // 5. Vẽ Boss (BÊN PHẢI) - Quái vật đối đầu, không bị che khuất
-        bossRenderer.draw(ctx, bossX, bossY);
+        // 5. Vẽ Boss (BÊN PHẢI) - Quái vật đối đầu, chân chạm chuẩn mặt đất groundY
+        bossRenderer.draw(ctx, bossX, groundY);
 
         // 6. Vẽ Kỹ Năng (PixelFX thuần túy tương tác mặt sàn + Số sát thương)
         effects.draw(ctx);
