@@ -91,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('/api/status');
             const data = await res.json();
             const status = data.status || {};
+            const snapshot = data.game_snapshot || {};
 
             if (status.connected) {
                 statusDot.className = 'status-dot online';
@@ -102,6 +103,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusText.textContent = status.message || 'Chưa kết nối';
                 btnConnect.style.display = 'inline-flex';
                 btnDisconnect.style.display = 'none';
+            }
+
+            // Điền cấu hình người chơi nếu chưa sửa
+            if (snapshot.player && !window._playerConfigLoaded) {
+                window._playerConfigLoaded = true;
+                const p = snapshot.player;
+                const inputMax = document.getElementById('inputPlayerMaxHp');
+                const inputReq = document.getElementById('inputReviveHearts');
+                const checkAtk = document.getElementById('checkBossAutoAttack');
+                const inputInt = document.getElementById('inputBossAttackInterval');
+
+                if (inputMax) inputMax.value = p.max_hp || 1000;
+                if (inputReq) inputReq.value = p.revive_hearts_required || 50;
+                if (checkAtk && snapshot.boss_auto_attack_enabled !== undefined) checkAtk.checked = snapshot.boss_auto_attack_enabled;
+                if (inputInt && snapshot.boss_attack_interval) inputInt.value = snapshot.boss_attack_interval;
             }
         } catch (err) {
             console.error(err);
@@ -240,6 +256,117 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(`Đã lưu cấu hình: Máu Boss Level hiện tại = ${data.boss.max_hp.toLocaleString()} HP!`);
             } catch (err) {
                 showToast("Lỗi lưu cấu hình máu!", false);
+            }
+        });
+    }
+
+    // 4. CẤU HÌNH DŨNG SĨ & HỒI SINH
+    const btnSavePlayerConfig = document.getElementById('btnSavePlayerConfig');
+    if (btnSavePlayerConfig) {
+        btnSavePlayerConfig.addEventListener('click', async () => {
+            const maxHp = parseInt(document.getElementById('inputPlayerMaxHp').value) || 1000;
+            const reviveHearts = parseInt(document.getElementById('inputReviveHearts').value) || 50;
+            const autoAttack = document.getElementById('checkBossAutoAttack').checked;
+            const attackInterval = parseFloat(document.getElementById('inputBossAttackInterval').value) || 8;
+
+            try {
+                const res = await fetch('/api/config/player', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        max_hp: maxHp,
+                        revive_hearts: reviveHearts,
+                        auto_attack: autoAttack,
+                        attack_interval: attackInterval
+                    })
+                });
+                const data = await res.json();
+                showToast(`Đã lưu: Máu Dũng Sĩ = ${data.player.max_hp} HP, Hồi sinh = ${data.player.revive_hearts_required} Tim!`);
+            } catch (err) {
+                showToast("Lỗi lưu cấu hình Dũng Sĩ!", false);
+            }
+        });
+    }
+
+    // 5. NÚT TEST BOSS PHẢN CÔNG & HỒI SINH
+    const btnSimBossAttack = document.getElementById('btnSimBossAttack');
+    if (btnSimBossAttack) {
+        btnSimBossAttack.addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/boss/attack_player', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Boss đã tung ${data.skill.name} gây -${data.damage} HP lên Dũng Sĩ!`);
+                } else {
+                    showToast(data.message, false);
+                }
+            } catch (err) {
+                showToast("Lỗi kích hoạt Boss đánh!", false);
+            }
+        });
+    }
+
+    const btnSimPlayerKill = document.getElementById('btnSimPlayerKill');
+    if (btnSimPlayerKill) {
+        btnSimPlayerKill.addEventListener('click', async () => {
+            try {
+                await fetch('/api/player/damage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ damage: 99999 })
+                });
+                showToast("Dũng Sĩ đã gục ngã! Hãy thả tim để hồi sinh!");
+            } catch (err) {
+                showToast("Lỗi hạ gục Dũng Sĩ!", false);
+            }
+        });
+    }
+
+    const btnSimAddHearts = document.getElementById('btnSimAddHearts');
+    if (btnSimAddHearts) {
+        btnSimAddHearts.addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/player/add_heart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ count: 10 })
+                });
+                const data = await res.json();
+                if (data.revived) {
+                    showToast("💖 Đã đủ Tim! Dũng Sĩ HỒI SINH ngoạn mục!");
+                } else {
+                    showToast(`💖 Đã thả 10 Tim (${data.player.revive_hearts_count}/${data.player.revive_hearts_required})!`);
+                }
+            } catch (err) {
+                showToast("Lỗi thả tim hồi sinh!", false);
+            }
+        });
+    }
+
+    const btnSimPlayerRevive = document.getElementById('btnSimPlayerRevive');
+    if (btnSimPlayerRevive) {
+        btnSimPlayerRevive.addEventListener('click', async () => {
+            try {
+                await fetch('/api/player/revive', { method: 'POST' });
+                showToast("Dũng Sĩ đã được hồi sinh tức thì!");
+            } catch (err) {
+                showToast("Lỗi hồi sinh Dũng Sĩ!", false);
+            }
+        });
+    }
+
+    const btnSimBossPoison = document.getElementById('btnSimBossPoison');
+    if (btnSimBossPoison) {
+        btnSimBossPoison.addEventListener('click', async () => {
+            try {
+                await fetch('/api/boss/poison', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ duration: 8, damage_per_tick: 90 })
+                });
+                showToast("Boss đã bị nhiễm Kịch Độc (rút máu mỗi giây)!");
+            } catch (err) {
+                showToast("Lỗi đầu độc Boss!", false);
             }
         });
     }

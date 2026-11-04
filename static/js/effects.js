@@ -153,6 +153,12 @@ class VisualSkillEffect {
             case 'lightning': return 85;
             case 'ice_shard': return 60;
             case 'bomb_blast': return 60;
+            case 'poison_sting': return 75;
+            case 'holy_heal': return 70;
+            case 'boss_fireball': return 60;
+            case 'boss_lightning': return 85;
+            case 'boss_frost': return 65;
+            case 'boss_slam': return 65;
             case 'magic_bullet':
             case 'heart_barrage': return 50;
             case 'gift_rose':
@@ -237,6 +243,89 @@ class VisualSkillEffect {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(3, 6);
                 effectsManager.spawnPixelFX('charmed', this.targetX, groundY - 35, 2.2, { duration: 1.4 });
+            }
+        }
+
+        // 7. Thánh Quang Hồi Máu (Chat "heal" / "hoi mau" - Cột sáng phục hồi Dũng Sĩ)
+        else if (this.type === 'holy_heal') {
+            if (this.frame === 1) {
+                effectsManager.triggerScreenShake(4, 8);
+                effectsManager.spawnPixelFX('heal', this.targetX, groundY, 2.6, { duration: 1.8 });
+                if (typeof this.options.onHit === 'function') {
+                    this.options.onHit(this);
+                }
+            }
+        }
+
+        // 8. Kịch Độc Ma Thuật (Chat "doc" / "độc" - Vụ nổ độc tố xanh lục bảo bùng cháy trên Boss)
+        else if (this.type === 'poison_sting') {
+            if (this.frame === 1) {
+                effectsManager.triggerScreenShake(6, 12);
+                effectsManager.spawnPixelFX('frostNova', this.targetX, groundY, 2.3, {
+                    duration: 1.8,
+                    palette: ["#021a05","#083d0e","#0e6b18","#1ca828","#32d640","#6eff78","#c2ffc7","#ffffff"]
+                });
+                effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 45, 1.8, {
+                    duration: 0.8,
+                    palette: ["#021a05","#083d0e","#0e6b18","#1ca828","#32d640","#6eff78","#c2ffc7","#ffffff"]
+                });
+                if (typeof this.options.onHit === 'function') {
+                    this.options.onHit(this);
+                }
+            }
+        }
+
+        // --- BOSS TẤN CÔNG NGƯỢC LẠI DŨNG SĨ ---
+        // 9. Boss Cầu Lửa Hắc Ám
+        else if (this.type === 'boss_fireball') {
+            if (this.frame === 1) {
+                effectsManager.triggerScreenShake(8, 12);
+                effectsManager.spawnPixelFX('fireball', originX - 40, groundY - 45, 2.2, { duration: 0.45 });
+            } else if (this.frame === 12) {
+                effectsManager.triggerScreenShake(12, 16);
+                effectsManager.spawnPixelFX('bigExplosion', this.targetX, groundY, 2.2, { duration: 1.6 });
+                if (typeof this.options.onHit === 'function') {
+                    this.options.onHit(this);
+                }
+            }
+        }
+
+        // 10. Boss Thiên Lôi Hắc Ám
+        else if (this.type === 'boss_lightning') {
+            if (this.frame === 1) {
+                effectsManager.spawnPixelFX('lightningStrike', this.targetX, groundY, 2.2, {
+                    duration: 2.2,
+                    palette: ["#1a0628","#350e50","#5c1888","#8b28c8","#b848ff","#da88ff","#f3d0ff","#ffffff"]
+                });
+            } else if (this.frame === 48) {
+                effectsManager.triggerScreenShake(16, 22);
+                effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 40, 1.8, { duration: 0.8 });
+                if (typeof this.options.onHit === 'function') {
+                    this.options.onHit(this);
+                }
+            }
+        }
+
+        // 11. Boss Hàn Băng Thấu Xương
+        else if (this.type === 'boss_frost') {
+            if (this.frame === 1) {
+                effectsManager.triggerScreenShake(8, 14);
+                effectsManager.spawnPixelFX('frostNova', this.targetX, groundY, 2.2, { duration: 1.8 });
+                effectsManager.spawnPixelFX('iceCrystal', this.targetX, groundY - 20, 2.2, { duration: 1.6 });
+                if (typeof this.options.onHit === 'function') {
+                    this.options.onHit(this);
+                }
+            }
+        }
+
+        // 12. Boss Địa Chấn Diệt Tuyệt
+        else if (this.type === 'boss_slam') {
+            if (this.frame === 1) {
+                effectsManager.triggerScreenShake(18, 24);
+                effectsManager.spawnPixelFX('darkExplosion', this.targetX, groundY, 2.5, { duration: 1.8 });
+                if (typeof this.options.onHit === 'function') {
+                    this.options.onHit(this);
+                }
             }
         }
 

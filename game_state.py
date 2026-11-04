@@ -17,6 +17,10 @@ class Boss:
         self.rage = 0 # 0 -> 100%
         self.is_dead = False
         self.killer = None
+        self.is_poisoned = False
+        self.poison_end_time = 0
+        self.poison_dmg_per_tick = 80
+        self.last_poison_tick = 0
 
     def take_damage(self, amount, user_name="Người bí ẩn"):
         if self.is_dead:
@@ -39,10 +43,37 @@ class Boss:
         self.current_hp += actual_heal
         return actual_heal
 
+    def apply_poison(self, duration=7, damage_per_tick=80):
+        """Đầu độc Boss: rút máu liên tục theo thời gian."""
+        if self.is_dead:
+            return False
+        now = time.time()
+        self.is_poisoned = True
+        self.poison_end_time = max(self.poison_end_time, now + duration)
+        self.poison_dmg_per_tick = damage_per_tick
+        self.last_poison_tick = now
+        return True
+
+    def check_poison_tick(self):
+        """Kiểm tra và trừ máu độc mỗi 1 giây."""
+        if not self.is_poisoned or self.is_dead:
+            return 0
+        now = time.time()
+        if now > self.poison_end_time:
+            self.is_poisoned = False
+            return 0
+        if now - self.last_poison_tick >= 1.0:
+            self.last_poison_tick = now
+            dmg = self.take_damage(self.poison_dmg_per_tick, "Kịch Độc")
+            return dmg
+        return 0
+
     def reset_rage(self):
         self.rage = 0
 
     def to_dict(self):
+        now = time.time()
+        is_pos = self.is_poisoned and (now < self.poison_end_time)
         return {
             "id": self.boss_id,
             "name": self.name,
@@ -52,7 +83,63 @@ class Boss:
             "boss_type": self.boss_type,
             "rage": round(self.rage, 1),
             "is_dead": self.is_dead,
-            "killer": self.killer
+            "killer": self.killer,
+            "is_poisoned": is_pos,
+            "poison_remaining": max(0, int(self.poison_end_time - now)) if is_pos else 0
+        }
+
+class Player:
+    def __init__(self, max_hp=1000, revive_hearts_required=50):
+        self.max_hp = max_hp
+        self.current_hp = max_hp
+        self.is_dead = False
+        self.revive_hearts_required = revive_hearts_required
+        self.revive_hearts_count = 0
+
+    def take_damage(self, amount):
+        if self.is_dead:
+            return 0
+        actual = min(self.current_hp, amount)
+        self.current_hp -= actual
+        if self.current_hp <= 0:
+            self.current_hp = 0
+            self.is_dead = True
+            self.revive_hearts_count = 0
+        return actual
+
+    def heal(self, amount):
+        if self.is_dead:
+            return 0
+        actual = min(self.max_hp - self.current_hp, amount)
+        self.current_hp += actual
+        return actual
+
+    def add_revive_heart(self, count=1):
+        if not self.is_dead:
+            return False, 0
+        self.revive_hearts_count += count
+        if self.revive_hearts_count >= self.revive_hearts_required:
+            self.is_dead = False
+            self.current_hp = self.max_hp
+            self.revive_hearts_count = 0
+            return True, self.current_hp
+        return False, self.revive_hearts_count
+
+    def revive(self):
+        self.is_dead = False
+        self.current_hp = self.max_hp
+        self.revive_hearts_count = 0
+        return self.current_hp
+
+    def to_dict(self):
+        return {
+            "max_hp": self.max_hp,
+            "current_hp": self.current_hp,
+            "hp_percent": round((self.current_hp / self.max_hp) * 100, 1) if self.max_hp > 0 else 0,
+            "is_dead": self.is_dead,
+            "revive_hearts_required": self.revive_hearts_required,
+            "revive_hearts_count": self.revive_hearts_count,
+            "revive_percent": round((self.revive_hearts_count / self.revive_hearts_required) * 100, 1) if self.revive_hearts_required > 0 else 0
         }
 
 # Kho 12 Boss đồ sộ, phong phú, độc nhất vô nhị
@@ -85,11 +172,82 @@ class GameState:
         self.recent_events = []
         self.max_recent_events = 20
 
+        # Dũng Sĩ Người Chơi & Cơ Chế Hồi Sinh
+        self.player = Player(max_hp=1000, revive_hearts_required=50)
+
+        # Boss Phản Công Người Chơi
+        self.boss_auto_attack_enabled = True
+        self.boss_attack_interval = 8.0 # Giây giữa các đòn phản công của Boss
+        self.last_boss_attack_time = time.time()
+
         # Cơ chế Hồi Máu Khi Không Tương Tác (Idle Regeneration)
         self.auto_heal_enabled = True
         self.idle_heal_delay = 5.0
         self.heal_percent_per_sec = 0.006
         self.last_interaction_time = time.time()
+
+    def set_player_config(self, max_hp=None, revive_hearts=None, auto_attack=None, attack_interval=None):
+        with self.lock:
+            if max_hp is not None:
+                new_max = max(100, int(max_hp))
+                diff = new_max - self.player.max_hp
+                self.player.max_hp = new_max
+                self.player.current_hp = max(1, min(self.player.max_hp, self.player.current_hp + diff))
+            if revive_hearts is not None:
+                self.player.revive_hearts_required = max(1, int(revive_hearts))
+            if auto_attack is not None:
+                self.boss_auto_attack_enabled = bool(auto_attack)
+            if attack_interval is not None:
+                self.boss_attack_interval = max(3.0, float(attack_interval))
+            return self.player.to_dict()
+
+    def boss_attack_player(self, skill_index=None):
+        """Boss tung skill phản công gây sát thương lên Dũng Sĩ."""
+        with self.lock:
+            if self.boss.is_dead or self.player.is_dead:
+                return None, 0
+            
+            skills = [
+                {
+                    "name": "Cầu Lửa Hắc Ám",
+                    "effect": "boss_fireball",
+                    "damage": 120,
+                    "message": "phóng Cầu Lửa Hắc Ám thiêu đốt Dũng Sĩ!"
+                },
+                {
+                    "name": "Thiên Lôi Hắc Ám",
+                    "effect": "boss_lightning",
+                    "damage": 160,
+                    "message": "giáng sấm sét hủy diệt xuống Dũng Sĩ!"
+                },
+                {
+                    "name": "Hàn Băng Thấu Xương",
+                    "effect": "boss_frost",
+                    "damage": 130,
+                    "message": "phóng bão tuyết đóng băng Dũng Sĩ!"
+                },
+                {
+                    "name": "Địa Chấn Diệt Tuyệt",
+                    "effect": "boss_slam",
+                    "damage": 200,
+                    "message": "dậm sàn đấu cuồng nộ đánh bay Dũng Sĩ!"
+                }
+            ]
+            import random
+            if skill_index is not None and 0 <= skill_index < len(skills):
+                skill = skills[skill_index]
+            else:
+                skill = random.choice(skills)
+
+            actual_dmg = self.player.take_damage(skill["damage"])
+            self.last_boss_attack_time = time.time()
+            return skill, actual_dmg
+
+    def heal_player(self, amount=150, nickname="Dũng sĩ"):
+        """Hồi máu cho người chơi."""
+        with self.lock:
+            actual = self.player.heal(amount)
+            return actual
 
     def _create_boss_for_level(self, level):
         template_idx = (level - 1) % len(BOSS_TEMPLATES)
@@ -228,6 +386,7 @@ class GameState:
             is_regenerating = self.auto_heal_enabled and not self.boss.is_dead and idle_seconds >= self.idle_heal_delay
             return {
                 "boss": self.boss.to_dict(),
+                "player": self.player.to_dict(),
                 "level": self.level,
                 "total_kills": self.total_kills,
                 "buff_active": buff_remaining > 0,
@@ -238,5 +397,7 @@ class GameState:
                 "auto_heal_enabled": self.auto_heal_enabled,
                 "idle_seconds": idle_seconds,
                 "hp_growth_rate": self.hp_growth_rate,
-                "base_start_hp": self.base_start_hp
+                "base_start_hp": self.base_start_hp,
+                "boss_auto_attack_enabled": self.boss_auto_attack_enabled,
+                "boss_attack_interval": self.boss_attack_interval
             }

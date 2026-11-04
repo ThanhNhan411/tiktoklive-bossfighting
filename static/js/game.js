@@ -143,6 +143,11 @@ document.addEventListener('DOMContentLoaded', () => {
             bossRageBarEl.style.width = `${boss.rage}%`;
         }
 
+        // Cập nhật Dữ liệu Dũng Sĩ Người Chơi & Tiến độ Hồi Sinh
+        if (snapshot.player) {
+            playerRenderer.setPlayerData(snapshot.player);
+        }
+
         if (snapshot.level) {
             levelBadgeEl.textContent = `ẢI ${snapshot.level}`;
         }
@@ -367,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
                 applyDamageHit(data);
             } 
-            // 2. KHI BÌNH LUẬN (chem, lua, bang, set, bom) HOẶC LIKE:
+            // 2. KHI BÌNH LUẬN (chem, lua, bang, set, bom, heal, doc) HOẶC LIKE:
             else {
                 // Hiển thị diễn hoạt nhân vật & phát âm thanh xuất chiêu
                 if (effect === 'sword_slash') {
@@ -388,12 +393,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (effect === 'heart_barrage' || effect === 'magic_bullet') {
                     playerRenderer.triggerCast(nickname, avatar, skill, effect);
                     sound.playHeartHit();
+                } else if (effect === 'holy_heal') {
+                    // Chat "heal" - Dũng Sĩ niệm chú ánh sáng hồi máu
+                    playerRenderer.triggerCast(nickname, avatar, skill, effect);
+                    sound.playVictory();
+                } else if (effect === 'poison_sting') {
+                    // Chat "doc" - Dũng Sĩ tung chưởng độc tố
+                    playerRenderer.triggerCast(nickname, avatar, skill, effect);
+                    sound.playSlash();
                 } else {
                     playerRenderer.triggerAttack(nickname, avatar, skill, effect);
                     sound.playSlash();
                 }
 
-                // ĐỐI VỚI CHIÊU SÉT ("set"):
+                // 2.1. ĐỐI VỚI CHIÊU SÉT ("set"):
                 // CHỜ TIA SÉT KHỔNG LỒ TỪ TRỜI ĐÁNH XUỐNG MẶT ĐẤT MỚI TRỪ MÁU, HIỆN SỐ DMG & RUNG CHẤN!
                 if (effect === 'lightning') {
                     effects.addSkill(effect, bossX, bossY, {
@@ -405,7 +418,42 @@ document.addEventListener('DOMContentLoaded', () => {
                             applyDamageHit(data);
                         }
                     });
-                } else {
+                } 
+                // 2.2. ĐỐI VỚI CHIÊU HỒI MÁU ("heal"):
+                // CỘT SÁNG THẦN THÁNH XUẤT HIỆN TRÊN NGƯỜI DŨNG SĨ & HỒI MÁU CHO DŨNG SĨ
+                else if (effect === 'holy_heal') {
+                    effects.addSkill('holy_heal', playerX, playerY, {
+                        originX: playerX,
+                        groundY: groundY,
+                        onHit: () => {
+                            playerRenderer.triggerHeal();
+                            const healVal = data.healed_player || 180;
+                            effects.addDamageNumber(playerX, playerY - 45, healVal, false, "+");
+                            if (data.player) {
+                                playerRenderer.setPlayerData(data.player);
+                            }
+                        }
+                    });
+                    // Đồng thời gây sát thương thánh quang nhẹ lên boss
+                    if (data.damage > 0) {
+                        applyDamageHit(data);
+                    }
+                }
+                // 2.3. ĐỐI VỚI CHIÊU ĐỘC TỐ ("doc"):
+                // NỔ ĐỘC TỐ XANH LỤC BẢO TRÊN BOSS & BẮT ĐẦU RÚT MÁU ĐỘC
+                else if (effect === 'poison_sting') {
+                    effects.addSkill('poison_sting', bossX, bossY, {
+                        originX: playerX,
+                        groundY: groundY,
+                        onHit: () => {
+                            applyDamageHit(data);
+                            if (data.game_snapshot && data.game_snapshot.boss) {
+                                bossRenderer.setBossData(data.game_snapshot.boss);
+                            }
+                        }
+                    });
+                }
+                else {
                     // Các chiêu đánh giáp lá cà hoặc bay nhanh: trừ máu ngay
                     effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
                     applyDamageHit(data);
@@ -438,6 +486,84 @@ document.addEventListener('DOMContentLoaded', () => {
             bossRenderer.triggerHeal();
             effects.spawnPixelFX('heal', bossX, groundY, 2.4);
             effects.addDamageNumber(bossX + 25, bossY - 60, healAmount, false, "+");
+
+        } else if (type === 'boss_attack_player') {
+            // BOSS TẤNG CÔNG NGƯỢC LẠI DŨNG SĨ VỚI CÁC SKILL ĐẶC BIỆT
+            const skillName = data.skill_name || 'Cầu Lửa Hắc Ám';
+            const effect = data.effect || 'boss_fireball';
+            const damage = data.damage || 150;
+
+            if (effect === 'boss_fireball') sound.playFireball();
+            else if (effect === 'boss_lightning') sound.playLightning();
+            else if (effect === 'boss_frost') sound.playIce();
+            else sound.playBomb();
+
+            effects.addSkill(effect, playerX, playerY, {
+                originX: bossX,
+                originY: bossY,
+                groundY: groundY,
+                onHit: () => {
+                    playerRenderer.triggerHurt();
+                    effects.addDamageNumber(playerX, playerY - 45, damage, true, "-");
+                    if (data.player) {
+                        playerRenderer.setPlayerData(data.player);
+                    }
+                }
+            });
+            addCombatFeed(bossRenderer.bossData.name || 'Boss', skillName, damage, '');
+
+        } else if (type === 'boss_poison_tick') {
+            // RÚT MÁU ĐỘC TỐ ĐỊNH KỲ CỦA BOSS
+            const poisonDmg = data.damage || 80;
+            effects.addDamageNumber(bossX + 20, bossY - 60, poisonDmg, false, "-🧪 ");
+            bossRenderer.triggerHurt();
+            if (data.boss) {
+                bossRenderer.setBossData(data.boss);
+            }
+
+        } else if (type === 'boss_poisoned') {
+            if (data.boss) {
+                bossRenderer.setBossData(data.boss);
+            }
+
+        } else if (type === 'player_revived') {
+            // DŨNG SĨ HỒI SINH THÀNH CÔNG VỚI CỘT SÁNG THẦN THÁNH
+            sound.playVictory();
+            effects.triggerScreenShake(15, 22);
+            effects.spawnPixelFX('heal', playerX, groundY, 3.2, { duration: 2.2 });
+            playerRenderer.triggerHeal();
+            if (data.player) {
+                playerRenderer.setPlayerData(data.player);
+            }
+            addCombatFeed(data.nickname || 'Dũng Sĩ', 'HỒI SINH THÀNH CÔNG', 0, data.avatar || '');
+
+        } else if (type === 'player_heart_added') {
+            // THẢ TIM CỨU DŨNG SĨ
+            sound.playHeartHit();
+            effects.spawnPixelFX('charmed', playerX + (Math.random() - 0.5) * 35, groundY - 45, 1.8, { duration: 1.0 });
+            if (data.player) {
+                playerRenderer.setPlayerData(data.player);
+            }
+
+        } else if (type === 'player_damaged') {
+            playerRenderer.triggerHurt();
+            effects.addDamageNumber(playerX, playerY - 45, data.damage || 200, false, "-");
+            if (data.player) {
+                playerRenderer.setPlayerData(data.player);
+            }
+
+        } else if (type === 'player_healed') {
+            playerRenderer.triggerHeal();
+            effects.spawnPixelFX('heal', playerX, groundY, 2.6, { duration: 1.8 });
+            effects.addDamageNumber(playerX, playerY - 45, data.amount || 200, false, "+");
+            if (data.player) {
+                playerRenderer.setPlayerData(data.player);
+            }
+
+        } else if (type === 'player_update') {
+            if (data.player) {
+                playerRenderer.setPlayerData(data.player);
+            }
 
         } else if (type === 'status') {
             if (connectionStatusEl) {

@@ -68,8 +68,45 @@ def _idle_heal_worker():
         except Exception:
             pass
 
+def _boss_combat_worker():
+    """Vòng lặp kiểm tra Boss phản công Dũng Sĩ & Rút máu độc mỗi giây."""
+    while True:
+        time.sleep(1.0)
+        try:
+            # 1. Rút máu khi Boss bị trúng độc
+            poison_dmg = game_state.boss.check_poison_tick()
+            if poison_dmg > 0:
+                broadcast_event("boss_poison_tick", {
+                    "damage": poison_dmg,
+                    "boss_name": game_state.boss.name,
+                    "message": f"🧪 {game_state.boss.name} bị trúng độc rút máu (-{poison_dmg} HP)!",
+                    "boss": game_state.boss.to_dict()
+                })
+
+            # 2. Boss tự động phản công Dũng Sĩ theo chu kỳ
+            now = time.time()
+            if (game_state.boss_auto_attack_enabled and 
+                not game_state.boss.is_dead and 
+                not game_state.player.is_dead):
+                if now - game_state.last_boss_attack_time >= game_state.boss_attack_interval:
+                    skill, dmg = game_state.boss_attack_player()
+                    if skill and dmg > 0:
+                        broadcast_event("boss_attack_player", {
+                            "skill_name": skill["name"],
+                            "effect": skill["effect"],
+                            "damage": dmg,
+                            "message": f"💥 {game_state.boss.name} {skill['message']} (-{dmg} HP)",
+                            "player": game_state.player.to_dict(),
+                            "boss": game_state.boss.to_dict()
+                        })
+        except Exception:
+            pass
+
 heal_thread = threading.Thread(target=_idle_heal_worker, daemon=True)
 heal_thread.start()
+
+combat_thread = threading.Thread(target=_boss_combat_worker, daemon=True)
+combat_thread.start()
 
 @app.route("/")
 @app.route("/game")
@@ -275,6 +312,121 @@ def api_config_heal():
         "idle_heal_delay": game_state.idle_heal_delay,
         "heal_percent": game_state.heal_percent_per_sec * 100.0
     })
+
+# --- API CẤU HÌNH & ĐIỀU KHIỂN DŨNG SĨ (PLAYER) & HỒI SINH ---
+
+@app.route("/api/config/player", methods=["POST"])
+def api_config_player():
+    """Cấu hình Máu Dũng Sĩ, Số Tim Hồi Sinh & Tần suất Boss tấn công."""
+    data = request.get_json() or {}
+    max_hp = data.get("max_hp")
+    revive_hearts = data.get("revive_hearts")
+    auto_attack = data.get("auto_attack")
+    attack_interval = data.get("attack_interval")
+    player_dict = game_state.set_player_config(
+        max_hp=max_hp,
+        revive_hearts=revive_hearts,
+        auto_attack=auto_attack,
+        attack_interval=attack_interval
+    )
+    broadcast_event("player_update", {
+        "player": player_dict,
+        "boss_auto_attack_enabled": game_state.boss_auto_attack_enabled,
+        "boss_attack_interval": game_state.boss_attack_interval,
+        "message": "Đã cập nhật cấu hình Dũng Sĩ & Hồi Sinh thành công!"
+    })
+    return jsonify({"success": True, "player": player_dict})
+
+@app.route("/api/player/damage", methods=["POST"])
+def api_player_damage():
+    """Gây sát thương lên Dũng Sĩ (Giả lập / Test)."""
+    data = request.get_json() or {}
+    dmg = int(data.get("damage", 250))
+    actual = game_state.player.take_damage(dmg)
+    broadcast_event("player_damaged", {
+        "damage": actual,
+        "player": game_state.player.to_dict(),
+        "message": f"Dũng Sĩ nhận {actual} sát thương!"
+    })
+    return jsonify({"success": True, "damage": actual, "player": game_state.player.to_dict()})
+
+@app.route("/api/player/heal", methods=["POST"])
+def api_player_heal():
+    """Hồi máu cho Dũng Sĩ."""
+    data = request.get_json() or {}
+    amt = int(data.get("amount", 200))
+    actual = game_state.player.heal(amt)
+    broadcast_event("player_healed", {
+        "amount": actual,
+        "player": game_state.player.to_dict(),
+        "message": f"Dũng Sĩ được hồi phục +{actual} HP!"
+    })
+    return jsonify({"success": True, "amount": actual, "player": game_state.player.to_dict()})
+
+@app.route("/api/player/revive", methods=["POST"])
+def api_player_revive():
+    """Hồi sinh Dũng Sĩ tức thì."""
+    game_state.player.revive()
+    broadcast_event("player_revived", {
+        "player": game_state.player.to_dict(),
+        "message": "Dũng Sĩ đã HỒI SINH ngoạn mục với 100% sinh lực!"
+    })
+    return jsonify({"success": True, "player": game_state.player.to_dict()})
+
+@app.route("/api/player/add_heart", methods=["POST"])
+def api_player_add_heart():
+    """Thả tim để tích lũy hồi sinh Dũng Sĩ."""
+    data = request.get_json() or {}
+    count = int(data.get("count", 5))
+    revived, _ = game_state.player.add_revive_heart(count)
+    if revived:
+        broadcast_event("player_revived", {
+            "player": game_state.player.to_dict(),
+            "message": "Dũng Sĩ đã đủ Tim và HỒI SINH thành công!"
+        })
+    else:
+        broadcast_event("player_heart_added", {
+            "added": count,
+            "player": game_state.player.to_dict(),
+            "message": f"Đã góp thêm {count} Tim ({game_state.player.revive_hearts_count}/{game_state.player.revive_hearts_required})!"
+        })
+    return jsonify({"success": True, "player": game_state.player.to_dict(), "revived": revived})
+
+@app.route("/api/boss/attack_player", methods=["POST"])
+def api_boss_attack_player():
+    """Kích hoạt Boss tung chiêu phản công Dũng Sĩ (thủ công từ Admin)."""
+    data = request.get_json() or {}
+    skill_idx = data.get("skill_index")
+    if skill_idx is not None:
+        try:
+            skill_idx = int(skill_idx)
+        except ValueError:
+            skill_idx = None
+    skill, dmg = game_state.boss_attack_player(skill_index=skill_idx)
+    if skill:
+        broadcast_event("boss_attack_player", {
+            "skill_name": skill["name"],
+            "effect": skill["effect"],
+            "damage": dmg,
+            "message": f"💥 {game_state.boss.name} {skill['message']} (-{dmg} HP)",
+            "player": game_state.player.to_dict(),
+            "boss": game_state.boss.to_dict()
+        })
+        return jsonify({"success": True, "skill": skill, "damage": dmg})
+    return jsonify({"success": False, "message": "Không thể tấn công (Dũng Sĩ hoặc Boss đã chết)"})
+
+@app.route("/api/boss/poison", methods=["POST"])
+def api_boss_poison():
+    """Đầu độc Boss (Giả lập / Test)."""
+    data = request.get_json() or {}
+    dur = int(data.get("duration", 8))
+    dpt = int(data.get("damage_per_tick", 90))
+    game_state.boss.apply_poison(duration=dur, damage_per_tick=dpt)
+    broadcast_event("boss_poisoned", {
+        "boss": game_state.boss.to_dict(),
+        "message": f"🧪 {game_state.boss.name} đã bị dính Độc Tố trong {dur}s!"
+    })
+    return jsonify({"success": True, "boss": game_state.boss.to_dict()})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

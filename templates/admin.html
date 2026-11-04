@@ -104,6 +104,28 @@
                     </div>
                     <button id="btnSaveHealConfig" class="btn btn-success" style="width: 100%; justify-content: center;">Lưu Cấu Hình Hồi Máu</button>
                 </div>
+
+                <!-- CẤU HÌNH DŨNG SĨ & HỒI SINH -->
+                <div style="border-top: 1px solid #282a3c; padding-top: 14px; margin-top: 10px;">
+                    <div class="form-label" style="color: #00e5ff; font-weight: 700;">🛡️ CẤU HÌNH DŨNG SĨ & HỒI SINH (PLAYER & REVIVE)</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                        <div>
+                            <label class="form-label">Máu tối đa Dũng Sĩ (HP):</label>
+                            <input type="number" id="inputPlayerMaxHp" class="form-input" value="1000" min="100" max="50000" step="100" />
+                        </div>
+                        <div>
+                            <label class="form-label">Số Tim cần hồi sinh:</label>
+                            <input type="number" id="inputReviveHearts" class="form-input" value="50" min="5" max="500" step="5" />
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <input type="checkbox" id="checkBossAutoAttack" checked style="width: 16px; height: 16px; cursor: pointer;" />
+                        <label for="checkBossAutoAttack" style="font-size: 13px; cursor: pointer;">Boss tự phản công sau mỗi</label>
+                        <input type="number" id="inputBossAttackInterval" class="form-input" style="width: 60px; padding: 4px 6px;" value="8" min="3" max="60" />
+                        <span style="font-size: 13px;">giây</span>
+                    </div>
+                    <button id="btnSavePlayerConfig" class="btn btn-primary" style="width: 100%; justify-content: center;">💾 Lưu Cấu Hình Dũng Sĩ & Hồi Sinh</button>
+                </div>
             </div>
         </div>
 
@@ -139,12 +161,25 @@
                         <button class="btn-sim" data-sim-type="comment" data-text="bang">❄️ Chat "bang" (Băng)</button>
                         <button class="btn-sim" data-sim-type="comment" data-text="set">⚡ Chat "set" (Sét)</button>
                         <button class="btn-sim" data-sim-type="comment" data-text="bom">💣 Chat "bom" (Bộc Phá)</button>
-                        <button class="btn-sim" data-sim-type="comment" data-text="heal">✨ Chat "heal" (Hồi Năng)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="heal">✨ Chat "heal" (Hồi Máu)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="doc">🧪 Chat "doc" (Trúng Độc)</button>
                     </div>
 
                     <div style="display: flex; gap: 8px; margin-top: 10px;">
                         <input type="text" id="simCommentCustom" class="form-input" placeholder="Nhập comment tùy ý để bắn chữ..." />
                         <button id="btnSendCustomComment" class="btn btn-primary">Bắn Chữ</button>
+                    </div>
+                </div>
+
+                <!-- 3. BOSS PHẢN CÔNG & HỒI SINH DŨNG SĨ -->
+                <div class="sim-section">
+                    <div class="sim-section-title">⚔️ BOSS PHẢN CÔNG & HỒI SINH DŨNG SĨ</div>
+                    <div class="btn-grid">
+                        <button id="btnSimBossAttack" class="btn btn-warning">⚔️ Boss Đánh Dũng Sĩ (-150 HP)</button>
+                        <button id="btnSimPlayerKill" class="btn btn-danger">💀 Hạ Gục Dũng Sĩ (Máu = 0)</button>
+                        <button id="btnSimAddHearts" class="btn btn-sim" style="border-color: #e91e63; color: #ff4081;">💖 Thả 10 Tim Hồi Sinh</button>
+                        <button id="btnSimPlayerRevive" class="btn btn-success">✝️ Hồi Sinh Tức Thì</button>
+                        <button id="btnSimBossPoison" class="btn btn-sim" style="border-color: #00e676; color: #00e676;">🧪 Đầu Độc Boss</button>
                     </div>
                 </div>
 

@@ -48,6 +48,33 @@ class PlayerRenderer {
         this.x = 220;
         this.y = 800;
         this.weaponColor = '#00e5ff';
+
+        // Dữ liệu Máu & Hồi Sinh của Dũng Sĩ
+        this.playerData = {
+            max_hp: 1000,
+            current_hp: 1000,
+            hp_percent: 100,
+            is_dead: false,
+            revive_hearts_required: 50,
+            revive_hearts_count: 0,
+            revive_percent: 0
+        };
+        this.displayHpPercent = 100;
+        this.hurtFlash = 0;
+        this.healGlow = 0;
+    }
+
+    setPlayerData(data) {
+        if (!data) return;
+        this.playerData = Object.assign({}, this.playerData, data);
+    }
+
+    triggerHurt() {
+        this.hurtFlash = 1.0;
+    }
+
+    triggerHeal() {
+        this.healGlow = 1.0;
     }
 
     setUserData(nickname, avatar, skillName, effectType = 'sword_slash') {
@@ -134,6 +161,13 @@ class PlayerRenderer {
                 this.currentFrame = (this.currentFrame + 1) % 8;
             }
         }
+
+        if (this.hurtFlash > 0) this.hurtFlash -= 0.08;
+        if (this.healGlow > 0) this.healGlow -= 0.05;
+
+        // Smooth Lerp hiển thị phần trăm máu người chơi
+        const targetHp = (this.playerData && typeof this.playerData.hp_percent === 'number') ? this.playerData.hp_percent : 100;
+        this.displayHpPercent += (targetHp - this.displayHpPercent) * 0.15;
     }
 
     draw(ctx, posX, groundY) {
@@ -145,10 +179,10 @@ class PlayerRenderer {
         ctx.imageSmoothingEnabled = false; // Chuẩn Retro Pixel Art sắc nét
 
         const charX = posX;
-        const charY = groundY + this.floatY;
+        const charY = groundY + (this.playerData.is_dead ? 0 : this.floatY);
 
         // 1. HÀO QUANG KHI NẠP NĂNG LƯỢNG QUÀ TẶNG (GIFT CHARGE)
-        if (this.animState === 'charge' || this.chargeTimer > 0) {
+        if (!this.playerData.is_dead && (this.animState === 'charge' || this.chargeTimer > 0)) {
             this._drawGiftAura(ctx, charX, charY);
         }
 
@@ -156,7 +190,7 @@ class PlayerRenderer {
         ctx.save();
         ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
         ctx.beginPath();
-        const shadowScale = Math.max(0.4, 1.0 - (-this.floatY / 30));
+        const shadowScale = this.playerData.is_dead ? 0.8 : Math.max(0.4, 1.0 - (-this.floatY / 30));
         ctx.ellipse(charX, groundY - 2, 26 * shadowScale, 7 * shadowScale, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
@@ -164,13 +198,134 @@ class PlayerRenderer {
         // 3. VẼ NHÂN VẬT TỪ SPRITE SHEET PIXEL ART
         this._drawSprite(ctx, charX, charY);
 
-        // 4. VẼ AVATAR TIKTOK CỦA NGƯỜI DÙNG Ở TRÊN ĐẦU
         // Đầu nhân vật nằm ở y=70 trong frame 200x200 (feet ở y=122, diff = 52px)
         const headTopY = charY - (52 * this.scale);
-        this._drawUserAvatar(ctx, charX, headTopY - 26);
 
-        // 5. VẼ BẢNG TÊN & CHIÊU THỨC
-        this._drawUserBadge(ctx, charX, headTopY - 62);
+        // 4. VẼ THANH MÁU HOẶC HỘP THẢ TIM HỒI SINH
+        if (this.playerData.is_dead) {
+            this._drawRevivalBox(ctx, charX, headTopY - 45);
+        } else {
+            // 4.1. Avatar TikTok
+            this._drawUserAvatar(ctx, charX, headTopY - 26);
+            // 4.2. Bảng tên & Chiêu thức
+            this._drawUserBadge(ctx, charX, headTopY - 60);
+            // 4.3. THANH MÁU DŨNG SĨ (PLAYER HEALTH BAR)
+            this._drawPlayerHpBar(ctx, charX, headTopY - 78);
+        }
+
+        ctx.restore();
+    }
+
+    _drawPlayerHpBar(ctx, x, y) {
+        ctx.save();
+        const barW = 110;
+        const barH = 11;
+        const bx = x - barW / 2;
+        const by = y;
+
+        // Khung nền thanh máu
+        ctx.fillStyle = 'rgba(5, 2, 15, 0.9)';
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, barW, barH, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        // Máu hiện tại (Lerp)
+        const hpPct = Math.max(0, Math.min(100, this.displayHpPercent));
+        const fillW = Math.max(0, (barW - 2) * (hpPct / 100));
+
+        if (fillW > 0) {
+            let fillColor = '#00e676'; // Xanh lá
+            if (hpPct <= 25) {
+                fillColor = '#ff1744'; // Đỏ nguy hiểm
+            } else if (hpPct <= 50) {
+                fillColor = '#ffea00'; // Vàng cam
+            }
+            ctx.fillStyle = fillColor;
+            ctx.beginPath();
+            ctx.roundRect(bx + 1, by + 1, fillW, barH - 2, 3);
+            ctx.fill();
+        }
+
+        // Chữ số máu
+        const curHp = this.playerData.current_hp || 0;
+        const maxHp = this.playerData.max_hp || 1000;
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 8.5px Montserrat, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 3;
+        ctx.fillText(`❤️ ${curHp.toLocaleString()} / ${maxHp.toLocaleString()}`, x, by + barH / 2);
+
+        ctx.restore();
+    }
+
+    _drawRevivalBox(ctx, x, y) {
+        ctx.save();
+        const boxW = 150;
+        const boxH = 46;
+        const bx = x - boxW / 2;
+        const by = y;
+
+        const pulse = 0.85 + Math.sin(this.time * 6.0) * 0.15;
+
+        // Nền hộp hồi sinh
+        ctx.fillStyle = 'rgba(25, 5, 20, 0.94)';
+        ctx.strokeStyle = `rgba(255, 23, 68, ${pulse})`;
+        ctx.lineWidth = 2.0;
+        ctx.shadowColor = '#ff1744';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, boxW, boxH, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Tiêu đề
+        ctx.fillStyle = '#ff5252';
+        ctx.font = 'bold 10px Montserrat, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('💀 DŨNG SĨ ĐÃ GỤC NGÃ!', x, by + 12);
+
+        // Thanh tiến độ thả tim hồi sinh
+        const barW = 130;
+        const barH = 12;
+        const barX = x - barW / 2;
+        const barY = by + 20;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.strokeStyle = '#e91e63';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(barX, barY, barW, barH, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        const count = this.playerData.revive_hearts_count || 0;
+        const req = this.playerData.revive_hearts_required || 50;
+        const pct = Math.min(100, Math.max(0, (count / req) * 100));
+        const fillW = Math.max(0, (barW - 2) * (pct / 100));
+
+        if (fillW > 0) {
+            ctx.fillStyle = 'linear-gradient(90deg, #ff4081, #e91e63)';
+            ctx.fillStyle = '#ff4081';
+            ctx.beginPath();
+            ctx.roundRect(barX + 1, barY + 1, fillW, barH - 2, 3);
+            ctx.fill();
+        }
+
+        // Chữ tiến độ tim
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 8.5px Montserrat, sans-serif';
+        ctx.fillText(`THẢ TIM CỨU: ${count} / ${req} ❤️`, x, barY + barH / 2 + 1);
+
+        // Nhắc nhở nhấp nháy
+        ctx.fillStyle = '#ffd700';
+        ctx.font = 'bold 8px Montserrat, sans-serif';
+        ctx.fillText('👉 CHAT "TIM" HOẶC CHẠM MÀN HÌNH', x, by + 40);
 
         ctx.restore();
     }
@@ -214,11 +369,31 @@ class PlayerRenderer {
         const drawX = x - (100 * this.scale);
         const drawY = y - (122 * this.scale);
 
+        ctx.save();
+        if (this.playerData.is_dead) {
+            ctx.filter = 'grayscale(100%) opacity(60%)';
+        }
+
         ctx.drawImage(
             this.spriteSheet,
             sx, sy, this.fw, this.fh,
             drawX, drawY, dw, dh
         );
+
+        // Hiệu ứng chớp đỏ khi Dũng Sĩ bị Boss đánh trúng
+        if (this.hurtFlash > 0) {
+            ctx.globalCompositeOperation = 'source-atop';
+            ctx.fillStyle = `rgba(255, 30, 60, ${this.hurtFlash * 0.6})`;
+            ctx.fillRect(drawX, drawY, dw, dh);
+        }
+
+        // Hiệu ứng hào quang xanh lá khi được hồi máu
+        if (this.healGlow > 0) {
+            ctx.globalCompositeOperation = 'source-atop';
+            ctx.fillStyle = `rgba(0, 230, 118, ${this.healGlow * 0.5})`;
+            ctx.fillRect(drawX, drawY, dw, dh);
+        }
+        ctx.restore();
     }
 
     _drawGiftAura(ctx, x, y) {

@@ -168,6 +168,26 @@ class TikTokManager:
         self.process_like(user_id, nickname, avatar, count)
 
     def process_like(self, user_id, nickname, avatar, count=1):
+        # NẾU NGƯỜI CHƠI ĐANG GỤC NGÃ (CHẾT): TIM DÙNG ĐỂ HỒI SINH!
+        if self.game_state.player.is_dead:
+            revived, current_hearts = self.game_state.player.add_revive_heart(count)
+            if revived:
+                self._broadcast("player_revived", {
+                    "nickname": nickname,
+                    "avatar": avatar,
+                    "player": self.game_state.player.to_dict(),
+                    "message": f"✨ @{nickname} đã góp tim giúp Dũng Sĩ HỒI SINH ngoạn mục!"
+                })
+            else:
+                self._broadcast("player_heart_added", {
+                    "nickname": nickname,
+                    "avatar": avatar,
+                    "added": count,
+                    "player": self.game_state.player.to_dict(),
+                    "message": f"💖 @{nickname} đã thả {count} Tim ({self.game_state.player.revive_hearts_count}/{self.game_state.player.revive_hearts_required})!"
+                })
+            return
+
         # 1 Like = 15 HP. Nếu >= 15 like thì mưa tên
         base_dmg = 15 * count
         skill_name = "Mưa Bắn Tim" if count >= 10 else "Tia Sáng Ma Thuật"
@@ -192,8 +212,32 @@ class TikTokManager:
 
     def process_comment(self, user_id, nickname, avatar, comment_text):
         text_lower = comment_text.lower().strip()
-        
+
+        # NẾU NGƯỜI CHƠI ĐANG GỤC NGÃ: Chat tim / cứu / hồi sinh để thêm tim hồi sinh
+        if self.game_state.player.is_dead:
+            if any(w in text_lower for w in ["tim", "like", "hoi sinh", "hồi sinh", "revive", "cuu", "cứu"]):
+                revived, _ = self.game_state.player.add_revive_heart(1)
+                if revived:
+                    self._broadcast("player_revived", {
+                        "nickname": nickname,
+                        "avatar": avatar,
+                        "player": self.game_state.player.to_dict(),
+                        "message": f"✨ @{nickname} đã chat tiếp sức giúp Dũng Sĩ HỒI SINH!"
+                    })
+                else:
+                    self._broadcast("player_heart_added", {
+                        "nickname": nickname,
+                        "avatar": avatar,
+                        "added": 1,
+                        "player": self.game_state.player.to_dict(),
+                        "message": f"💖 @{nickname} đã chat gửi 1 Tim hồi sinh ({self.game_state.player.revive_hearts_count}/{self.game_state.player.revive_hearts_required})!"
+                    })
+                return
+
         # Nhận diện kỹ năng qua từ khóa
+        is_poison = False
+        is_heal = False
+
         if any(w in text_lower for w in ["chem", "chém", "slash", "kiem", "kiếm", "danh", "đánh"]):
             skill_name = "Trảm Phong Kiếm"
             effect_type = "sword_slash"
@@ -214,10 +258,16 @@ class TikTokManager:
             skill_name = "Bộc Phá Ma Thuật"
             effect_type = "bomb_blast"
             raw_dmg = 450
+        elif any(w in text_lower for w in ["doc", "độc", "poison", "toxic", "venom"]):
+            skill_name = "Kịch Độc Ma Thuật"
+            effect_type = "poison_sting"
+            raw_dmg = 150
+            is_poison = True
         elif any(w in text_lower for w in ["heal", "hoi mau", "hồi máu", "buff"]):
-            skill_name = "Thánh Quang Hồi Năng"
+            skill_name = "Thánh Quang Hồi Máu"
             effect_type = "holy_heal"
-            raw_dmg = 120
+            raw_dmg = 80
+            is_heal = True
         else:
             # Comment thường thành đạn chữ bay vào boss
             skill_name = f"Ngọc Chữ: {comment_text[:20]}"
@@ -234,6 +284,18 @@ class TikTokManager:
         )
         event_data["effect"] = effect_type
         event_data["comment_text"] = comment_text
+
+        # Áp dụng độc tố lên Boss
+        if is_poison:
+            self.game_state.boss.apply_poison(duration=7, damage_per_tick=80)
+            event_data["is_poison"] = True
+
+        # Hồi máu cho Dũng Sĩ người chơi
+        if is_heal:
+            healed = self.game_state.heal_player(180, nickname)
+            event_data["healed_player"] = healed
+            event_data["player"] = self.game_state.player.to_dict()
+
         self._broadcast("action", event_data)
 
     def _handle_gift(self, event):
@@ -252,6 +314,26 @@ class TikTokManager:
     def process_gift(self, user_id, nickname, avatar, gift_name, diamonds=1, count=1):
         diamonds = max(1, diamonds)
         gift_name_lower = gift_name.lower().strip()
+
+        # NẾU NGƯỜI CHƠI ĐANG GỤC NGÃ: TẶNG QUÀ HỒI SINH SIÊU TỐC!
+        if self.game_state.player.is_dead:
+            revive_bonus = max(1, min(diamonds, 50))
+            revived, _ = self.game_state.player.add_revive_heart(revive_bonus)
+            if revived:
+                self._broadcast("player_revived", {
+                    "nickname": nickname,
+                    "avatar": avatar,
+                    "player": self.game_state.player.to_dict(),
+                    "message": f"👑 @{nickname} tặng {gift_name} x{count} giúp Dũng Sĩ HỒI SINH ngoạn mục!"
+                })
+            else:
+                self._broadcast("player_heart_added", {
+                    "nickname": nickname,
+                    "avatar": avatar,
+                    "added": revive_bonus,
+                    "player": self.game_state.player.to_dict(),
+                    "message": f"💖 @{nickname} tặng {gift_name} x{count} tiếp sức {revive_bonus} Tim ({self.game_state.player.revive_hearts_count}/{self.game_state.player.revive_hearts_required})!"
+                })
 
         # PHÂN LOẠI 9 HIỆU ỨNG QUÀ TẶNG ĐỘC NHẤT VÔ NHỊ & SIÊU HOÀNH TRÁNG
         if any(k in gift_name_lower for k in ["galaxy", "thiên hà", "universe", "vũ trụ", "dragon", "rồng", "whale", "cá voi"]):

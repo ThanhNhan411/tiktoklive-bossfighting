@@ -261,11 +261,66 @@ class BossRenderer {
                 ctx.fillRect(renderX, renderY, bossSize, bossSize);
             }
 
+            // Phủ sắc độc tố xanh lục bảo khi Boss bị dính độc
+            if (this.bossData.is_poisoned) {
+                const poisonPulse = 0.32 + Math.sin(this.time * 6.0) * 0.14;
+                ctx.globalCompositeOperation = 'source-atop';
+                ctx.fillStyle = `rgba(50, 255, 60, ${poisonPulse})`;
+                ctx.fillRect(renderX, renderY, bossSize, bossSize);
+            }
+
             ctx.restore();
+
+            // Vẽ hiệu ứng bọt khí độc tố bốc lên từ thân Boss
+            if (this.bossData.is_poisoned) {
+                this._drawPoisonBubbles(ctx, centerX, renderY + bossSize * 0.6, bossSize);
+            }
         } else {
             this._drawFallback(ctx, centerX, centerBossY, bossSize);
         }
 
+        ctx.restore();
+    }
+
+    _drawPoisonBubbles(ctx, centerX, centerY, bossSize) {
+        if (!this.poisonBubbles) this.poisonBubbles = [];
+        if (this.poisonBubbles.length < 18 && Math.random() < 0.45) {
+            this.poisonBubbles.push({
+                x: centerX + (Math.random() - 0.5) * (bossSize * 0.65),
+                y: centerY + (Math.random() - 0.5) * (bossSize * 0.4),
+                r: Math.random() * 4.5 + 3,
+                vy: Math.random() * 1.6 + 1.0,
+                vx: (Math.random() - 0.5) * 0.8,
+                alpha: 0.95,
+                color: Math.random() > 0.3 ? '#00e676' : '#76ff03'
+            });
+        }
+
+        ctx.save();
+        for (let i = this.poisonBubbles.length - 1; i >= 0; i--) {
+            const b = this.poisonBubbles[i];
+            b.y -= b.vy;
+            b.x += b.vx + Math.sin(b.y * 0.1) * 0.5;
+            b.alpha -= 0.016;
+
+            if (b.alpha <= 0) {
+                this.poisonBubbles.splice(i, 1);
+                continue;
+            }
+
+            ctx.globalAlpha = Math.max(0, b.alpha);
+            ctx.fillStyle = b.color;
+            ctx.shadowColor = '#00e676';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+        }
         ctx.restore();
     }
 
