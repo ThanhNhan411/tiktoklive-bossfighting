@@ -237,8 +237,8 @@ class BossRenderer {
         // Cập nhật diễn hoạt hào quang PixelFX
         this.auraFx.update(0.016);
 
-        // Kích thước hào quang bao trọn và tôn vinh vóc dáng Boss
-        const auraScale = (bossSize / 115) * (this.bossData.rage > 40 ? (1 + (this.bossData.rage - 40) / 100 * 0.22) : 1.0);
+        // Kích thước hào quang bao trọn và tôn vinh vóc dáng Boss (scale 80% tinh gọn)
+        const auraScale = (bossSize / 145) * (this.bossData.rage > 40 ? (1 + (this.bossData.rage - 40) / 100 * 0.22) : 1.0);
         const auraAlpha = this.bossData.is_dead ? Math.max(0, this.deathProgress) * 0.85 : (this.bossData.rage > 40 ? 0.95 : 0.85);
         this.auraFx.draw(ctx, centerX, centerBossY, auraScale, auraAlpha);
 

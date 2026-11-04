@@ -399,16 +399,16 @@ document.addEventListener('DOMContentLoaded', () => {
             victoryOverlayEl.classList.add('hidden');
 
         } else if (type === 'boss_attack') {
-            // Boss bên phải tung đòn nộ nứt mặt sàn về phía người chơi
+            // Boss bên phải tung đòn nộ nứt mặt sàn về phía người chơi (scale 80% tinh gọn)
             sound.playBomb();
-            effects.triggerScreenShake(25, 30);
-            effects.spawnPixelFX('darkExplosion', bossX, groundY, 3.4);
+            effects.triggerScreenShake(20, 25);
+            effects.spawnPixelFX('darkExplosion', bossX, groundY, 2.7);
 
         } else if (type === 'boss_heal') {
-            // Boss hồi máu tại vị trí Boss bên phải
+            // Boss hồi máu tại vị trí Boss bên phải (scale 80% tinh gọn)
             const healAmount = data.heal_amount || 0;
             bossRenderer.triggerHeal();
-            effects.spawnPixelFX('heal', bossX, groundY, 3.0);
+            effects.spawnPixelFX('heal', bossX, groundY, 2.4);
             effects.addDamageNumber(bossX + 25, bossY - 60, healAmount, false, "+");
 
         } else if (type === 'status') {
@@ -570,4 +570,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     requestAnimationFrame(gameLoop);
+
+    // Hỗ trợ kiểm thử trực quan nhanh qua query params (vd: ?test_skill=sword_slash)
+    const urlParams = new URLSearchParams(window.location.search);
+    const testSkill = urlParams.get('test_skill');
+    if (testSkill) {
+        handleServerEvent({
+            type: 'action',
+            data: {
+                effect: testSkill,
+                damage: 15400,
+                is_crit: true,
+                nickname: 'Hero_Gamer',
+                skill: testSkill === 'sword_slash' ? 'Trảm Phong Kiếm' : testSkill
+            }
+        });
+        // Bước trước vài frame để bắt trọn khoảnh khắc va chạm impact
+        for (let k = 0; k < 5; k++) {
+            effects.update();
+        }
+    }
 });
