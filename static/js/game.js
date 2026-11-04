@@ -1,6 +1,6 @@
 // game.js - TRÌNH ĐIỀU KHIỂN GAME 2D PLATFORM & ĐỒNG BỘ SSE THỜI GIAN THỰC
-// Boss đứng 1 bên (phải), Người chơi đại diện TikTok đứng 1 bên (trái)
-// Chỉ Zoom-In người chơi khi TẶNG QUÀ. Thông báo không che mất Boss!
+// Boss đứng bên phải, Người chơi đứng bên trái
+// 100% Kỹ năng PixelFX, Tương tác chuẩn mặt đất, Zoom cận cảnh khi tặng quà không chồng hiệu ứng
 
 // BỘ ĐIỀU KHIỂN CAMERA CINEMATIC ZOOM
 class CameraController {
@@ -14,13 +14,13 @@ class CameraController {
         this.isCinematic = false;
     }
 
-    startGiftZoom(targetX, targetY, durationMs = 850) {
+    startGiftZoom(targetX, targetY, durationMs = 950) {
         this.isCinematic = true;
         this.targetZoom = 1.65; // Zoom cận cảnh người chơi khi tặng quà
         this.targetFocusX = targetX;
         this.targetFocusY = targetY;
 
-        // Sau thời gian nạp năng lượng -> Zoom out trở về toàn cảnh
+        // Sau thời gian nạp năng lượng -> Zoom out mượt mà trở về toàn cảnh
         setTimeout(() => {
             this.targetZoom = 1.0;
             this.targetFocusX = 0;
@@ -32,7 +32,6 @@ class CameraController {
     }
 
     update() {
-        // Nội suy mượt mà camera
         this.zoom += (this.targetZoom - this.zoom) * 0.12;
         this.focusX += (this.targetFocusX - this.focusX) * 0.12;
         this.focusY += (this.targetFocusY - this.focusY) * 0.12;
@@ -63,6 +62,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const bossRenderer = new window.BossRenderer(canvas);
     const playerRenderer = new window.PlayerRenderer(canvas);
     const camera = new CameraController();
+
+    // Sprite Sheet Mặt Đất 2D Platform (Oak Woods Tileset)
+    const tilesetImg = new Image();
+    tilesetImg.src = '/static/images/platform_tileset.png';
+    let tilesetLoaded = false;
+    tilesetImg.onload = () => { tilesetLoaded = true; };
 
     // DOM Elements
     const bossNameEl = document.getElementById('bossName');
@@ -98,11 +103,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Chiều cao sàn đấu platform
         const groundY = isPortrait ? canvas.height * 0.44 : canvas.height * 0.62;
         // Người chơi đứng bên TRÁI
-        const playerX = isPortrait ? canvas.width * 0.22 : canvas.width * 0.24;
+        const playerX = isPortrait ? canvas.width * 0.20 : canvas.width * 0.22;
         const playerY = groundY;
         // Boss đứng bên PHẢI
-        const bossX = isPortrait ? canvas.width * 0.76 : canvas.width * 0.78;
-        const bossY = isPortrait ? groundY - 70 : groundY - 80;
+        const bossX = isPortrait ? canvas.width * 0.77 : canvas.width * 0.78;
+        const bossY = isPortrait ? groundY - 65 : groundY - 75;
 
         return { isPortrait, groundY, playerX, playerY, bossX, bossY };
     }
@@ -119,6 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let vipBannerTimeout = null;
     let isVictoryScheduled = false;
     let victoryTimeout = null;
+    let isGiftZoomActive = false;
+    let pendingActions = [];
 
     // Cập nhật DOM từ Game Snapshot
     function updateGameState(snapshot) {
@@ -270,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateGameState(data.game_snapshot);
         }
 
-        const { playerX, playerY, bossX, bossY } = getPlatformLayout();
+        const { playerX, playerY, bossX, bossY, groundY } = getPlatformLayout();
 
         if (type === 'action') {
             const effect = data.effect || 'sword_slash';
@@ -281,14 +288,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const skill = data.skill || 'Tấn công';
             const isGift = (data.action_type === 'gift') || (effect.startsWith('gift_'));
 
-            // 1. KHI NGƯỜI DÙNG TẶNG QUÀ: ZOOM LẠI GẦN NGƯỜI CHƠI & NẠP NĂNG LƯỢNG
+            // 1. KHI NGƯỜI DÙNG TẶNG QUÀ:
+            // ZOOM CẬN CẢNH NGƯỜI CHƠI -> TUYỆT ĐỐI KHÔNG TUNG SKILL CÙNG LÚC ĐỂ TRÁNH CHỒNG CHÉO HIỆU ỨNG!
             if (isGift) {
-                // CHỈ ZOOM KHI TẶNG QUÀ (Tập trung vào người chơi bên trái)
-                camera.startGiftZoom(playerX, playerY - 30, 850);
-                playerRenderer.triggerGiftCharge(nickname, avatar, skill, effect, 50);
+                isGiftZoomActive = true;
+
+                // Zoom vào người chơi bên trái
+                camera.startGiftZoom(playerX, playerY - 35, 950);
+                playerRenderer.triggerGiftCharge(nickname, avatar, skill, effect, 55);
                 showVipBanner(avatar, nickname, skill, damage);
 
-                // Phát âm thanh quà tặng hoành tráng
+                // Phát âm thanh nạp năng lượng quà tặng
                 if (effect === 'gift_rose' || effect === 'blade_storm') sound.playGiftLaser();
                 else if (effect === 'gift_heart') sound.playCupidArrow();
                 else if (effect === 'gift_donut' || effect === 'meteor_shower') sound.playBomb();
@@ -300,15 +310,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (effect === 'gift_galaxy' || effect === 'ultimate_dragon') sound.playBlackHoleGalaxy();
                 else sound.playGiftLaser();
 
-                // Sau 0.75s nạp năng lượng -> Đòn tuyệt kỹ bay từ Người chơi sang Boss bên phải
+                // SAU KHI CAMERA ZOOM-OUT XONG HOÀN TOÀN TRỞ LẠI TOÀN CẢNH (~920ms):
+                // MỚI BẮT ĐẦU TUNG CHIÊU SANG BOSS ĐỂ NGƯỜI XEM THẤY RÕ 100% HIỆU ỨNG!
                 setTimeout(() => {
-                    effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY });
-                    effects.addDamageNumber(bossX + 30, bossY - 80, damage, true);
+                    isGiftZoomActive = false;
+
+                    // Người chơi vung đòn dứt điểm
+                    playerRenderer.triggerAttack(nickname, avatar, skill, effect);
+
+                    // Hiệu ứng PixelFX thuần túy tương tác chuẩn với mặt sàn
+                    effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
+                    effects.addDamageNumber(bossX + 25, bossY - 80, damage, true);
                     bossRenderer.triggerHurt();
-                }, 750);
+
+                    // Giải phóng các đòn đánh thông thường đang chờ
+                    if (pendingActions.length > 0) {
+                        const queued = pendingActions.shift();
+                        setTimeout(() => handleServerEvent(queued), 250);
+                    }
+                }, 920);
             } 
-            // 2. KHI BÌNH LUẬN (chem, lua, bang, set, bom) HOẶC LIKE: KHÔNG ZOOM, RA ĐÒN NGAY LẬP TỨC!
+            // 2. KHI BÌNH LUẬN (chem, lua, bang, set, bom) HOẶC LIKE:
             else {
+                // Nếu camera đang trong khoảnh khắc Zoom tặng quà VIP -> Tạm giữ lại để tránh che mất hiệu ứng của người tặng quà
+                if (isGiftZoomActive) {
+                    pendingActions.push(event);
+                    return;
+                }
+
+                // KHÔNG ZOOM, RA ĐÒN NGAY LẬP TỨC!
                 if (effect === 'sword_slash') {
                     playerRenderer.triggerAttack(nickname, avatar, skill, effect);
                     sound.playSlash();
@@ -332,8 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     sound.playSlash();
                 }
 
-                // Chiêu thức tung thẳng từ Người chơi (trái) tới Boss (phải)
-                effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY });
+                // Chiêu thức tung thẳng từ Người chơi (trái) tới Boss (phải) với tương tác chuẩn sàn đấu
+                effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
                 effects.addDamageNumber(bossX + 20, bossY - 70, damage, isCrit);
                 bossRenderer.triggerHurt();
             }
@@ -358,17 +388,16 @@ document.addEventListener('DOMContentLoaded', () => {
             victoryOverlayEl.classList.add('hidden');
 
         } else if (type === 'boss_attack') {
-            // Boss bên phải tung đòn nộ quét về phía người chơi bên trái
+            // Boss bên phải tung đòn nộ nứt mặt sàn về phía người chơi
             sound.playBomb();
             effects.triggerScreenShake(25, 30);
-            effects.spawnPixelFX('darkExplosion', bossX, bossY, 3.6);
-            effects.createExplosion(bossX, bossY, 'purple', 30);
+            effects.spawnPixelFX('darkExplosion', bossX, groundY, 3.6);
 
         } else if (type === 'boss_heal') {
             // Boss hồi máu tại vị trí Boss bên phải
             const healAmount = data.heal_amount || 0;
             bossRenderer.triggerHeal();
-            effects.spawnPixelFX('heal', bossX, bossY, 3.2);
+            effects.spawnPixelFX('heal', bossX, groundY, 3.2);
             effects.addDamageNumber(bossX + 25, bossY - 60, healAmount, false, "+");
 
         } else if (type === 'status') {
@@ -379,57 +408,60 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // VẼ SÀN ĐẤU 2D PLATFORM TRỰC TIẾP
+    // VẼ SÀN ĐẤU 2D BẰNG SPRITE SHEET TILESET PIXEL ART THẬT
     function drawBattlePlatform(ctx, canvasWidth, canvasHeight, groundY) {
         ctx.save();
+        ctx.imageSmoothingEnabled = false; // Chuẩn Pixel Art sắc nét
 
-        const platformWidth = canvasWidth * 0.92;
+        const platformWidth = canvasWidth * 0.94;
         const platformX = (canvasWidth - platformWidth) / 2;
-        const platformHeight = 28;
+        const tileSize = 24; // Khối 24x24 pixel
+        const scale = 2.0;
+        const drawTileSize = tileSize * scale; // 48px mỗi ô
 
         // 1. Ánh sáng chân trời phía sau sàn đấu
-        const horizonGrad = ctx.createLinearGradient(0, groundY - 80, 0, groundY + 40);
+        const horizonGrad = ctx.createLinearGradient(0, groundY - 70, 0, groundY + 30);
         horizonGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
         horizonGrad.addColorStop(0.7, 'rgba(124, 77, 255, 0.12)');
-        horizonGrad.addColorStop(1, 'rgba(0, 229, 255, 0.15)');
+        horizonGrad.addColorStop(1, 'rgba(0, 229, 255, 0.18)');
         ctx.fillStyle = horizonGrad;
-        ctx.fillRect(0, groundY - 80, canvasWidth, 120);
+        ctx.fillRect(0, groundY - 70, canvasWidth, 100);
 
-        // 2. Khối đá sàn đấu platform
-        const slabGrad = ctx.createLinearGradient(platformX, groundY, platformX, groundY + platformHeight);
-        slabGrad.addColorStop(0, '#1a0933');
-        slabGrad.addColorStop(1, '#090214');
+        if (tilesetLoaded && tilesetImg.complete) {
+            const cols = Math.ceil(platformWidth / drawTileSize);
+            
+            for (let c = 0; c < cols; c++) {
+                const tx = platformX + c * drawTileSize;
+                
+                // Tile hàng 0 (Mặt cỏ / Bề mặt sàn):
+                let sx = 24;
+                let sy = 0;
+                if (c === 0) sx = 0; // Mép cỏ bên trái
+                else if (c === cols - 1) sx = 72; // Mép cỏ bên phải
 
-        ctx.fillStyle = slabGrad;
+                ctx.drawImage(tilesetImg, sx, sy, tileSize, tileSize, tx, groundY - 4, drawTileSize, drawTileSize);
+
+                // Tile hàng 1 (Lớp đất đá sâu bên dưới):
+                let dirtSx = 24;
+                let dirtSy = 24;
+                if (c === 0) dirtSx = 0;
+                else if (c === cols - 1) dirtSx = 72;
+
+                ctx.drawImage(tilesetImg, dirtSx, dirtSy, tileSize, tileSize, tx, groundY - 4 + drawTileSize, drawTileSize, drawTileSize);
+            }
+        } else {
+            // Fallback khi ảnh đang tải
+            ctx.fillStyle = '#1a0933';
+            ctx.fillRect(platformX, groundY, platformWidth, 36);
+        }
+
+        // 2. Viền neon phát sáng siêu mảnh chạy dọc mặt sàn
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.65)';
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.roundRect(platformX, groundY, platformWidth, platformHeight, 8);
-        ctx.fill();
-
-        // 3. Đường viền phát sáng ma thuật ở mặt trên sàn đấu
-        ctx.strokeStyle = '#00e5ff';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(platformX + 4, groundY);
-        ctx.lineTo(platformX + platformWidth - 4, groundY);
+        ctx.moveTo(platformX + 4, groundY - 2);
+        ctx.lineTo(platformX + platformWidth - 4, groundY - 2);
         ctx.stroke();
-
-        // 4. Ký tự rune cổ phát sáng dọc thành sàn đấu
-        ctx.fillStyle = 'rgba(0, 229, 255, 0.4)';
-        for (let rx = platformX + 40; rx < platformX + platformWidth - 40; rx += 55) {
-            ctx.fillRect(rx, groundY + 10, 8, 4);
-            ctx.fillRect(rx + 15, groundY + 14, 5, 3);
-        }
-
-        // 5. Tinh thể trôi nổi dưới đáy sàn đấu
-        ctx.fillStyle = 'rgba(124, 77, 255, 0.35)';
-        for (let cx = platformX + 60; cx < platformX + platformWidth - 60; cx += 110) {
-            ctx.beginPath();
-            ctx.moveTo(cx, groundY + platformHeight);
-            ctx.lineTo(cx + 8, groundY + platformHeight + 14);
-            ctx.lineTo(cx - 8, groundY + platformHeight + 14);
-            ctx.closePath();
-            ctx.fill();
-        }
 
         ctx.restore();
     }
@@ -497,16 +529,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { groundY, playerX, playerY, bossX, bossY } = getPlatformLayout();
 
-        // 3. Vẽ Sàn Đấu 2D Platform
+        // 3. Vẽ Sàn Đấu 2D Platform (Sprite Sheet Tileset)
         drawBattlePlatform(ctx, canvas.width, canvas.height, groundY);
 
-        // 4. Vẽ Người Chơi (BÊN TRÁI) - Đại diện người dùng với Avatar & Đòn đánh
+        // 4. Vẽ Người Chơi (BÊN TRÁI) - Sprite Sheet Pixel Art & Avatar TikTok
         playerRenderer.draw(ctx, playerX, playerY);
 
         // 5. Vẽ Boss (BÊN PHẢI) - Quái vật đối đầu, không bị che khuất
         bossRenderer.draw(ctx, bossX, bossY);
 
-        // 6. Vẽ Kỹ Năng (PixelFX + Hạt phát sáng + Số sát thương)
+        // 6. Vẽ Kỹ Năng (PixelFX thuần túy tương tác mặt sàn + Số sát thương)
         effects.draw(ctx);
 
         ctx.restore();
