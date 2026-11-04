@@ -210,8 +210,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateGameState(data.game_snapshot);
         }
 
+        const isPortrait = canvas.height > canvas.width;
         const bossCenterX = canvas.width / 2;
-        const bossCenterY = canvas.height * 0.45;
+        const bossCenterY = isPortrait ? canvas.height * 0.36 : canvas.height * 0.45;
 
         if (type === 'action') {
             const effect = data.effect || 'sword_slash';
@@ -269,10 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (type === 'boss_attack') {
             sound.playBomb();
             effects.triggerScreenShake(25, 30);
-            effects.createExplosion(bossCenterX, bossCenterY, '#ff0000', 60);
+            effects.spawnPixelFX('darkExplosion', bossCenterX, bossCenterY, 3.6);
+            effects.createExplosion(bossCenterX, bossCenterY, 'purple', 30);
         } else if (type === 'boss_heal') {
             const healAmount = data.heal_amount || 0;
             bossRenderer.triggerHeal();
+            effects.spawnPixelFX('heal', bossCenterX, bossCenterY, 3.2);
             effects.addDamageNumber(bossCenterX, bossCenterY - 60, healAmount, false, "+");
             // Sinh các hạt sinh mệnh màu xanh lá
             for (let i = 0; i < 15; i++) {
@@ -345,8 +348,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.translate(offsetX, offsetY);
 
         // Vẽ Boss
+        const isPortrait = canvas.height > canvas.width;
         const bossCenterX = canvas.width / 2;
-        const bossCenterY = canvas.height * 0.45;
+        const bossCenterY = isPortrait ? canvas.height * 0.36 : canvas.height * 0.45;
         bossRenderer.draw(ctx, bossCenterX, bossCenterY);
 
         // Vẽ các hiệu ứng hạt, phép thuật, số sát thương

@@ -156,6 +156,77 @@ class DamageNumber {
     }
 }
 
+// LỚP DIỄN HOẠT HIỆU ỨNG PIXELFX PROCEDURAL (OPEN-SOURCE PIXELFX)
+class PixelFXInstance {
+    constructor(effectMod, x, y, scale = 2.8, customOptions = {}) {
+        this.mod = effectMod;
+        this.meta = effectMod.meta || {};
+        const [w, h] = this.meta.size || [160, 120];
+        const [ox, oy] = this.meta.origin || [Math.floor(w / 2), Math.floor(h / 2)];
+        this.w = w;
+        this.h = h;
+        this.ox = ox;
+        this.oy = oy;
+        this.x = x;
+        this.y = y;
+        this.scale = scale;
+
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = w;
+        this.canvas.height = h;
+        this.ctx = this.canvas.getContext('2d');
+        this.imgData = this.ctx.createImageData(w, h);
+
+        this.frame = window.PixelFX.createFrame(w, h);
+        this.inst = window.PixelFX.createFx(this.mod, {
+            x: ox,
+            y: oy,
+            ...customOptions
+        });
+
+        this.isDead = false;
+        this.fps = this.meta.fps || 30;
+        this.step = 1 / this.fps;
+        this.acc = 0;
+        this.duration = this.meta.duration || 2.2;
+        this.elapsed = 0;
+    }
+
+    update(dt = 0.016) {
+        if (this.isDead) return false;
+        this.elapsed += dt;
+        this.acc += dt;
+        while (this.acc >= this.step) {
+            this.acc -= this.step;
+            if (this.elapsed >= this.duration && !this.meta.loop) {
+                this.isDead = true;
+                return false;
+            }
+            this.inst.update(this.step);
+        }
+
+        window.PixelFX.clearFrame(this.frame);
+        this.inst.draw(this.frame, "front");
+        window.PixelFX.composite(this.frame, this.imgData.data, null);
+        this.ctx.putImageData(this.imgData, 0, 0);
+        return true;
+    }
+
+    draw(mainCtx) {
+        if (this.isDead) return;
+        mainCtx.save();
+        mainCtx.imageSmoothingEnabled = false; // Chuẩn Retro Pixel Art sắc nét
+        
+        const drawW = this.w * this.scale;
+        const drawH = this.h * this.scale;
+        const drawX = this.x - this.ox * this.scale;
+        const drawY = this.y - this.oy * this.scale;
+
+        mainCtx.drawImage(this.canvas, drawX, drawY, drawW, drawH);
+        mainCtx.restore();
+    }
+}
+
 class VisualSkillEffect {
     constructor(type, targetX, targetY, options = {}) {
         this.type = type;
@@ -195,67 +266,85 @@ class VisualSkillEffect {
     update(effectsManager) {
         this.frame++;
 
-        // 1. Trảm Phong Kiếm
+        // 1. Trảm Phong Kiếm (Double Slash từ PixelFX)
         if (this.type === 'sword_slash') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(7, 12);
                 effectsManager.createSlashArc(this.targetX, this.targetY);
+                effectsManager.spawnPixelFX('doubleSlash', this.targetX, this.targetY, 3.4);
             }
         }
 
-        // 2. Cầu Lửa
+        // 2. Cầu Lửa (Fireball + Big Explosion từ PixelFX)
         else if (this.type === 'fireball') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(8, 15);
                 effectsManager.createExplosion(this.targetX, this.targetY, 'fire', 16);
                 effectsManager.createShockwave(this.targetX, this.targetY, 'fire');
+                effectsManager.spawnPixelFX('fireball', this.targetX - 90, this.targetY, 3.2);
+                effectsManager.spawnPixelFX('bigExplosion', this.targetX, this.targetY, 2.6);
             }
             if (this.frame % 8 === 0 && this.frame < 90) {
                 effectsManager.createFlameColumn(this.targetX, this.targetY);
             }
         }
 
-        // 3. Lôi Thần
+        // 3. Lôi Thần (Lightning Strike + Chain Lightning từ PixelFX)
         else if (this.type === 'lightning') {
             if (this.frame === 1 || this.frame === 30 || this.frame === 60) {
                 effectsManager.triggerScreenShake(10, 14);
                 effectsManager.createLightningBolt(this.targetX, this.targetY);
                 effectsManager.createShockwave(this.targetX, this.targetY, 'purple');
+                effectsManager.spawnPixelFX('lightningStrike', this.targetX + (Math.random() - 0.5) * 60, this.targetY, 2.8);
+            }
+            if (this.frame === 1) {
+                effectsManager.spawnPixelFX('chainLightning', this.targetX, this.targetY, 2.8);
             }
             if (this.frame % 6 === 0 && this.frame < 90) {
                 effectsManager.createElectricSparks(this.targetX, this.targetY);
             }
         }
 
-        // 4. Băng Giá
+        // 4. Băng Giá (Frost Nova + Ice Crystal từ PixelFX)
         else if (this.type === 'ice_shard') {
             if (this.frame === 1) {
                 effectsManager.createIcePillars(this.targetX, this.targetY);
                 effectsManager.createShockwave(this.targetX, this.targetY, 'cyan');
+                effectsManager.spawnPixelFX('frostNova', this.targetX, this.targetY, 2.6);
+                effectsManager.spawnPixelFX('iceCrystal', this.targetX, this.targetY, 3.0);
             }
         }
 
-        // 5. Bộc Phá
+        // 5. Bộc Phá (Barrel Explosion + Nuke từ PixelFX)
         else if (this.type === 'bomb_blast') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(14, 18);
                 effectsManager.createExplosion(this.targetX, this.targetY, 'fire', 22);
                 effectsManager.createShockwave(this.targetX, this.targetY, 'fire');
+                effectsManager.spawnPixelFX('barrelExplosion', this.targetX, this.targetY, 3.0);
+                effectsManager.spawnPixelFX('nuke', this.targetX, this.targetY, 2.2);
             }
             if (this.frame % 10 === 0 && this.frame < 70) {
                 effectsManager.createSmokePlume(this.targetX, this.targetY);
             }
         }
 
-        // 6. Thả Tim
+        // 6. Thả Tim (Charmed Sparkles từ PixelFX)
         else if (this.type === 'heart_barrage') {
             if (this.frame % 6 === 0 && this.frame < 120) {
                 effectsManager.createStreamOfHearts(this.targetX, this.targetY);
             }
+            if (this.frame === 1 || this.frame === 45) {
+                effectsManager.spawnPixelFX('charmed', this.targetX + (Math.random() - 0.5) * 80, this.targetY + (Math.random() - 0.5) * 60, 3.2);
+            }
         }
 
-        // 🌹 Quà 1: Hoa Hồng
+        // 🌹 Quà 1: Hoa Hồng (Cherry Blossoms + Double Slash từ PixelFX)
         else if (this.type === 'gift_rose' || this.type === 'blade_storm') {
+            if (this.frame === 1) {
+                effectsManager.spawnPixelFX('cherryBlossoms', this.targetX, this.targetY - 140, 2.8);
+                effectsManager.spawnPixelFX('doubleSlash', this.targetX, this.targetY, 3.8);
+            }
             if (this.frame % 8 === 0 && this.frame < 140) {
                 effectsManager.createFlyingSword(this.targetX, this.targetY);
             }
@@ -264,8 +353,11 @@ class VisualSkillEffect {
             }
         }
 
-        // 💖 Quà 2: Trái Tim
+        // 💖 Quà 2: Trái Tim (Charmed Nova từ PixelFX)
         else if (this.type === 'gift_heart') {
+            if (this.frame === 1) {
+                effectsManager.spawnPixelFX('charmed', this.targetX, this.targetY, 4.0);
+            }
             if (this.frame === 18) {
                 effectsManager.triggerScreenShake(10, 12);
                 effectsManager.createShockwave(this.targetX, this.targetY, 'pink');
@@ -276,28 +368,36 @@ class VisualSkillEffect {
             }
         }
 
-        // 🍩 Quà 3: Donut
+        // 🍩 Quà 3: Donut (Meteor + Big Explosion từ PixelFX)
         else if (this.type === 'gift_donut' || this.type === 'meteor_shower') {
+            if (this.frame === 1) {
+                effectsManager.spawnPixelFX('meteor', this.targetX, this.targetY, 3.2);
+                effectsManager.spawnPixelFX('bigExplosion', this.targetX, this.targetY, 2.8);
+            }
             if (this.frame % 45 === 0 && this.frame < 150) {
                 effectsManager.triggerScreenShake(12, 16);
                 effectsManager.createGiantMeteor(this.targetX, this.targetY);
             }
         }
 
-        // 🚀 Quà 4: Tên Lửa Hạt Nhân
+        // 🚀 Quà 4: Tên Lửa Hạt Nhân (Nuke từ PixelFX)
         else if (this.type === 'gift_rocket') {
             if (this.frame === 55) {
                 effectsManager.triggerScreenShake(20, 26);
                 effectsManager.createNuclearExplosion(this.targetX, this.targetY);
                 effectsManager.createShockwave(this.targetX, this.targetY, 'fire');
+                effectsManager.spawnPixelFX('nuke', this.targetX, this.targetY, 3.5);
             }
             if (this.frame > 55 && this.frame % 8 === 0 && this.frame < 140) {
                 effectsManager.createSmokePlume(this.targetX, this.targetY);
             }
         }
 
-        // 👑 Quà 5: Vương Miện
+        // 👑 Quà 5: Vương Miện (Smite / Thánh Kiếm Excalibur từ PixelFX)
         else if (this.type === 'gift_crown') {
+            if (this.frame === 1) {
+                effectsManager.spawnPixelFX('smite', this.targetX, this.targetY, 3.6);
+            }
             if (this.frame === 40) {
                 effectsManager.triggerScreenShake(18, 22);
                 effectsManager.createShockwave(this.targetX, this.targetY, 'gold');
@@ -305,16 +405,23 @@ class VisualSkillEffect {
             }
         }
 
-        // 🐺 Quà 6: Bầy Sói
+        // 🐺 Quà 6: Bầy Sói (Dash Strike từ PixelFX)
         else if (this.type === 'gift_corgi') {
+            if (this.frame === 1 || this.frame === 35) {
+                effectsManager.spawnPixelFX('dashStrike', this.targetX, this.targetY, 3.2);
+            }
             if (this.frame % 20 === 0 && this.frame < 140) {
                 effectsManager.triggerScreenShake(8, 10);
                 effectsManager.createWolfSlits(this.targetX, this.targetY);
             }
         }
 
-        // 🏎️ Quà 7: Siêu Xe
+        // 🏎️ Quà 7: Siêu Xe (Dash Strike + Fire Tornado từ PixelFX)
         else if (this.type === 'gift_car') {
+            if (this.frame === 1) {
+                effectsManager.spawnPixelFX('dashStrike', this.targetX, this.targetY, 3.5);
+                effectsManager.spawnPixelFX('fireTornado', this.targetX, this.targetY, 2.8);
+            }
             if (this.frame === 35) {
                 effectsManager.triggerScreenShake(16, 20);
                 effectsManager.createExplosion(this.targetX, this.targetY, 'fire', 22);
@@ -322,8 +429,11 @@ class VisualSkillEffect {
             }
         }
 
-        // 🦁 Quà 8: Sư Tử
+        // 🦁 Quà 8: Sư Tử (Fire Tornado từ PixelFX)
         else if (this.type === 'gift_lion') {
+            if (this.frame === 1) {
+                effectsManager.spawnPixelFX('fireTornado', this.targetX, this.targetY, 3.8);
+            }
             if (this.frame === 25 || this.frame === 80 || this.frame === 135) {
                 effectsManager.triggerScreenShake(16, 20);
                 effectsManager.createShockwave(this.targetX, this.targetY, 'gold');
@@ -331,8 +441,14 @@ class VisualSkillEffect {
             }
         }
 
-        // 🌌 Quà 9: Hố Đen & Rồng Thần
+        // 🌌 Quà 9: Hố Đen & Rồng Thần (Black Hole + Arcane Beam từ PixelFX)
         else if (this.type === 'gift_galaxy' || this.type === 'ultimate_dragon') {
+            if (this.frame === 1) {
+                effectsManager.spawnPixelFX('blackHole', this.targetX, this.targetY, 4.0);
+            }
+            if (this.frame === 60) {
+                effectsManager.spawnPixelFX('arcaneBeam', this.targetX, this.targetY, 3.4);
+            }
             effectsManager.triggerScreenShake(12, 16);
             if (this.frame % 8 === 0 && this.frame < 280) {
                 effectsManager.createHolySparks(this.targetX, this.targetY);
@@ -525,6 +641,7 @@ class EffectsManager {
         this.particles = [];
         this.damageNumbers = [];
         this.activeSkills = [];
+        this.activePixelFx = [];
         this.shakeTime = 0;
         this.shakeMagnitude = 0;
         this.ambientParticles = [];
@@ -548,6 +665,21 @@ class EffectsManager {
     triggerScreenShake(magnitude = 12, duration = 18) {
         this.shakeMagnitude = Math.max(this.shakeMagnitude, magnitude);
         this.shakeTime = Math.max(this.shakeTime, duration);
+    }
+
+    spawnPixelFX(effectName, x, y, scale = 2.8, options = {}) {
+        if (!window.PixelFX || !window.PixelFX.effects) return null;
+        const mod = window.PixelFX.effects[effectName];
+        if (!mod) {
+            console.warn(`[PixelFX] Unknown effect: ${effectName}`);
+            return null;
+        }
+        if (this.activePixelFx.length >= 8) {
+            this.activePixelFx.shift();
+        }
+        const fx = new PixelFXInstance(mod, x, y, scale, options);
+        this.activePixelFx.push(fx);
+        return fx;
     }
 
     addSkill(type, targetX, targetY, options = {}) {
@@ -787,6 +919,16 @@ class EffectsManager {
             }
         }
 
+        // In-place update activePixelFx (Hiệu ứng PixelFX)
+        let fxWrite = 0;
+        for (let i = 0; i < this.activePixelFx.length; i++) {
+            const fx = this.activePixelFx[i];
+            if (fx.update(0.016)) {
+                this.activePixelFx[fxWrite++] = fx;
+            }
+        }
+        this.activePixelFx.length = fxWrite;
+
         // In-place update activeSkills
         let skillWrite = 0;
         for (let i = 0; i < this.activeSkills.length; i++) {
@@ -829,6 +971,11 @@ class EffectsManager {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
             ctx.fill();
+        }
+
+        // 1.5. Vẽ Hiệu Ứng PixelFX Procedural
+        for (let i = 0; i < this.activePixelFx.length; i++) {
+            this.activePixelFx[i].draw(ctx);
         }
 
         // 2. Vẽ Active Skills (Đồ họa lớn)

@@ -102,7 +102,9 @@ class BossRenderer {
         this._drawMagicAura(ctx, x, y, bType);
 
         // 2. VẼ BOSS (TỐI ƯU KHÔNG DÙNG CTX.FILTER)
-        const bossSize = 430 * breathScale;
+        const isPortrait = this.canvas.height > this.canvas.width;
+        const baseSize = isPortrait ? Math.min(this.canvas.width * 0.58, 480) : 430;
+        const bossSize = baseSize * breathScale;
 
         if (isLoaded && img.complete) {
             ctx.save();
