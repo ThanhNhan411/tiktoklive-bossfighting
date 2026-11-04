@@ -1,5 +1,5 @@
-// player.js - HIỂN THỊ & DIỄN HOẠT NGƯỜI CHƠI BẰNG SPRITE SHEET PIXEL ART THẬT
-// Đồng bộ 100% đồ họa Pixel Art với thư viện PixelFX
+// player.js - HIỂN THỊ & DIỄN HOẠT DŨNG SĨ BẰNG SPRITE SHEET SAMURAI PIXEL ART CHUẨN
+// Đồng bộ 100% phong cách đồ họa Pixel Art với thư viện PixelFX
 
 class PlayerRenderer {
     constructor(canvas) {
@@ -16,7 +16,12 @@ class PlayerRenderer {
             effectType: 'idle'
         };
 
-        // Sprite Sheet Pixel Art Warrior (414 x 748, 6 cột x 17 hàng, mỗi frame 69 x 44)
+        // Sprite Sheet Pixel Art Samurai (1600 x 1000: 8 cột x 5 hàng, mỗi frame 200 x 200)
+        // Row 0: Idle (8 frames)
+        // Row 1: Run (8 frames)
+        // Row 2: Attack 1 (6 frames)
+        // Row 3: Attack 2 (6 frames)
+        // Row 4: Charge / Cast (8 frames)
         this.spriteSheet = new Image();
         this.spriteSheet.src = '/static/images/hero_warrior.png';
         this.spriteLoaded = false;
@@ -24,15 +29,15 @@ class PlayerRenderer {
             this.spriteLoaded = true;
         };
 
-        this.fw = 69; // Chiều rộng 1 frame
-        this.fh = 44; // Chiều cao 1 frame
-        this.scale = 2.6; // Tỷ lệ phóng to pixel
+        this.fw = 200; // Chiều rộng 1 frame
+        this.fh = 200; // Chiều cao 1 frame
+        this.scale = 1.35; // Tỷ lệ phóng to pixel lý tưởng cho sàn đấu platform
 
         // Quản lý Animation
         this.animState = 'idle'; // 'idle', 'run', 'attack1', 'attack2', 'charge'
         this.currentFrame = 0;
         this.frameTick = 0;
-        this.frameSpeed = 6; // 6 ticks đổi 1 frame (~10 FPS animation)
+        this.frameSpeed = 5; // Tốc độ diễn hoạt
         this.chargeTimer = 0;
         this.floatY = 0;
 
@@ -88,7 +93,7 @@ class PlayerRenderer {
         this.frameTick = 0;
     }
 
-    triggerGiftCharge(nickname, avatar, skillName, effectType = 'gift_galaxy', durationFrames = 50) {
+    triggerGiftCharge(nickname, avatar, skillName, effectType = 'gift_galaxy', durationFrames = 60) {
         this.setUserData(nickname, avatar, skillName, effectType);
         this.animState = 'charge';
         this.currentFrame = 0;
@@ -101,9 +106,9 @@ class PlayerRenderer {
         this.frameTick++;
 
         if (this.animState === 'charge') {
-            this.floatY = Math.sin(this.time * 6) * 10 - 15; // Lơ lửng trên không
-            if (this.frameTick % 7 === 0) {
-                this.currentFrame = (this.currentFrame + 1) % 6;
+            this.floatY = Math.sin(this.time * 6) * 8 - 10; // Lơ lửng trên không
+            if (this.frameTick % 6 === 0) {
+                this.currentFrame = (this.currentFrame + 1) % 8;
             }
             if (this.chargeTimer > 0) {
                 this.chargeTimer--;
@@ -124,9 +129,9 @@ class PlayerRenderer {
             }
         } else {
             // Idle bình thường
-            this.floatY = Math.sin(this.time * 2.0) * 2;
+            this.floatY = Math.sin(this.time * 2.0) * 1.5;
             if (this.frameTick % this.frameSpeed === 0) {
-                this.currentFrame = (this.currentFrame + 1) % 6;
+                this.currentFrame = (this.currentFrame + 1) % 8;
             }
         }
     }
@@ -149,10 +154,10 @@ class PlayerRenderer {
 
         // 2. VẼ BÓNG DƯỚI SÀN
         ctx.save();
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
         ctx.beginPath();
         const shadowScale = Math.max(0.4, 1.0 - (-this.floatY / 30));
-        ctx.ellipse(charX, groundY - 2, 28 * shadowScale, 8 * shadowScale, 0, 0, Math.PI * 2);
+        ctx.ellipse(charX, groundY - 2, 26 * shadowScale, 7 * shadowScale, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
@@ -160,43 +165,54 @@ class PlayerRenderer {
         this._drawSprite(ctx, charX, charY);
 
         // 4. VẼ AVATAR TIKTOK CỦA NGƯỜI DÙNG Ở TRÊN ĐẦU
-        this._drawUserAvatar(ctx, charX, charY - (this.fh * this.scale) - 10);
+        // Đầu nhân vật nằm ở y=70 trong frame 200x200 (feet ở y=122, diff = 52px)
+        const headTopY = charY - (52 * this.scale);
+        this._drawUserAvatar(ctx, charX, headTopY - 26);
 
         // 5. VẼ BẢNG TÊN & CHIÊU THỨC
-        this._drawUserBadge(ctx, charX, charY - (this.fh * this.scale) - 52);
+        this._drawUserBadge(ctx, charX, headTopY - 62);
 
         ctx.restore();
     }
 
     _drawSprite(ctx, x, y) {
         if (!this.spriteLoaded) {
-            // Fallback nếu ảnh chưa tải xong
+            // Fallback nếu ảnh đang tải
             ctx.fillStyle = '#00e5ff';
             ctx.fillRect(x - 20, y - 60, 40, 60);
             return;
         }
 
         // Xác định dòng (Row) trong sprite sheet theo animation state
-        let row = 0; // Row 0: Idle
-        if (this.animState === 'attack1') {
-            row = 4; // Row 4: Attack 1
+        let row = 0; // Row 0: Idle (8 frames)
+        let maxFramesInRow = 8;
+        if (this.animState === 'run') {
+            row = 1;
+            maxFramesInRow = 8;
+        } else if (this.animState === 'attack1') {
+            row = 2; // Row 2: Attack 1 (6 frames)
+            maxFramesInRow = 6;
         } else if (this.animState === 'attack2') {
-            row = 5; // Row 5: Attack 2
+            row = 3; // Row 3: Attack 2 (6 frames)
+            maxFramesInRow = 6;
         } else if (this.animState === 'charge') {
-            row = 1; // Row 1: Ready / Dash pose
+            row = 4; // Row 4: Charge / Cast pose (8 frames)
+            maxFramesInRow = 8;
         }
 
-        const col = Math.min(5, Math.max(0, this.currentFrame));
+        const col = Math.min(maxFramesInRow - 1, Math.max(0, this.currentFrame));
         const sx = col * this.fw;
         const sy = row * this.fh;
 
         const dw = this.fw * this.scale;
         const dh = this.fh * this.scale;
 
-        // Căn chỉnh chân nhân vật chạm sát mặt đất:
-        // Trong sprite 69x44, chân nằm ở y ~ 43.
-        const drawX = x - (dw * 0.42); // Tâm trọng tâm nhân vật
-        const drawY = y - dh + 4;     // Đặt chân chạm đất
+        // Căn chỉnh tâm trọng tâm và chân nhân vật chạm sát mặt đất:
+        // Trong frame 200x200:
+        // Trọng tâm x ở giữa = 100.
+        // Chân nhân vật chạm đất ở y = 122.
+        const drawX = x - (100 * this.scale);
+        const drawY = y - (122 * this.scale);
 
         ctx.drawImage(
             this.spriteSheet,
@@ -208,16 +224,16 @@ class PlayerRenderer {
     _drawGiftAura(ctx, x, y) {
         ctx.save();
         const rot = this.time * 4.0;
-        const auraY = y - 40;
+        const auraY = y - (30 * this.scale);
 
-        const auraGrad = ctx.createRadialGradient(x, auraY, 10, x, auraY, 90);
+        const auraGrad = ctx.createRadialGradient(x, auraY, 10, x, auraY, 85);
         auraGrad.addColorStop(0, 'rgba(255, 215, 0, 0.9)');
-        auraGrad.addColorStop(0.5, 'rgba(255, 61, 0, 0.4)');
+        auraGrad.addColorStop(0.5, 'rgba(255, 61, 0, 0.35)');
         auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.fillStyle = auraGrad;
         ctx.beginPath();
-        ctx.arc(x, auraY, 90, 0, Math.PI * 2);
+        ctx.arc(x, auraY, 85, 0, Math.PI * 2);
         ctx.fill();
 
         // Vòng rune xoay tròn
@@ -225,7 +241,7 @@ class PlayerRenderer {
         ctx.lineWidth = 2.5;
         ctx.setLineDash([8, 6]);
         ctx.beginPath();
-        ctx.arc(x, auraY, 68 + Math.sin(this.time * 8) * 5, rot, rot + Math.PI * 2);
+        ctx.arc(x, auraY, 65 + Math.sin(this.time * 8) * 4, rot, rot + Math.PI * 2);
         ctx.stroke();
 
         ctx.restore();
