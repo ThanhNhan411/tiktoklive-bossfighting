@@ -150,7 +150,7 @@ class VisualSkillEffect {
         switch (type) {
             case 'sword_slash': return 40;
             case 'fireball': return 60;
-            case 'lightning': return 60;
+            case 'lightning': return 85;
             case 'ice_shard': return 60;
             case 'bomb_blast': return 60;
             case 'magic_bullet':
@@ -197,11 +197,21 @@ class VisualSkillEffect {
             }
         }
 
-        // 3. Lôi Thần Trừng Phạt (Lightning Strike giáng thẳng nứt mặt đất)
+        // 3. Lôi Thần Trừng Phạt (Lightning Strike: nạp pháp trận, giáng sét tại frame 48 mới trừ máu)
         else if (this.type === 'lightning') {
             if (this.frame === 1) {
-                effectsManager.triggerScreenShake(11, 15);
-                effectsManager.spawnPixelFX('lightningStrike', this.targetX, groundY, 2.3, { duration: 1.8 });
+                // Triệu hồi pháp trận sấm sét tích tụ năng lượng dưới chân boss
+                effectsManager.spawnPixelFX('lightningStrike', this.targetX, groundY, 2.3, { duration: 2.2 });
+            } else if (this.frame === 48) {
+                // ĐÚNG KHOẢNH KHẮC TIA SÉT KHỔNG LỒ GIÁNG XUỐNG MẶT ĐẤT (t = 0.76s):
+                // 1. Rung chấn màn hình mạnh mẽ
+                effectsManager.triggerScreenShake(15, 20);
+                // 2. Nổ tia lửa chí mạng trên ngực boss
+                effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 45, 1.8, { duration: 0.8 });
+                // 3. Kích hoạt hiệu ứng trừ máu boss, hiện số sát thương và âm thanh sấm sét
+                if (typeof this.options.onHit === 'function') {
+                    this.options.onHit(this);
+                }
             }
         }
 

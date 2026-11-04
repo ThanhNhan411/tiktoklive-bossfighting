@@ -130,12 +130,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let isGiftZoomActive = false;
     let pendingActions = [];
 
-    // Cập nhật DOM từ Game Snapshot
-    function updateGameState(snapshot) {
+    // Cập nhật DOM từ Game Snapshot (cho phép trì hoãn trừ máu khi chiêu đang bay/nạp)
+    function updateGameState(snapshot, updateBossHp = true) {
         if (!snapshot) return;
 
         const boss = snapshot.boss;
-        if (boss) {
+        if (boss && updateBossHp) {
             bossRenderer.setBossData(boss);
             bossNameEl.textContent = boss.name;
             bossHpTextEl.textContent = `${boss.current_hp.toLocaleString()} / ${boss.max_hp.toLocaleString()} HP (${boss.hp_percent}%)`;
@@ -299,13 +299,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 4500);
     }
 
+    // HÀM TRỪ MÁU, BẮT ĐẦU HIỆN SỐ SÁT THƯƠNG & CHỚP ĐỎ BOSS KHI ĐÒN ĐÁNH THỰC SỰ CHẠM TRÚNG
+    function applyDamageHit(data) {
+        const { bossX, bossY } = getPlatformLayout();
+        const damage = data.damage || 0;
+        const isCrit = data.is_crit || false;
+        const effect = data.effect || '';
+
+        // 1. Cập nhật trừ máu Boss theo snapshot
+        if (data.game_snapshot) {
+            updateGameState(data.game_snapshot, true);
+        }
+
+        // 2. Hiện số sát thương bay lên trên đầu Boss
+        effects.addDamageNumber(bossX + 15, bossY - 60, damage, isCrit);
+
+        // 3. Boss rung chớp đỏ khi nhận sát thương
+        bossRenderer.triggerHurt();
+
+        // 4. Nếu đòn này kết liễu Boss
+        if (data.boss_dead || (data.game_snapshot && data.game_snapshot.boss && data.game_snapshot.boss.is_dead)) {
+            scheduleVictory(data.game_snapshot.boss, effect);
+        }
+    }
+
     // XỬ LÝ SỰ KIỆN TỪ SERVER QUA SSE
     function handleServerEvent(event) {
         const type = event.type;
         const data = event.data || {};
+        const isDelayedHit = (type === 'action' && data.effect === 'lightning');
 
+        // Nếu là chiêu có độ trễ (sét giáng từ trời), chỉ cập nhật thông tin chung, CHƯA trừ máu thanh HP
         if (data.game_snapshot) {
-            updateGameState(data.game_snapshot);
+            updateGameState(data.game_snapshot, !isDelayedHit);
         }
 
         const { playerX, playerY, bossX, bossY, groundY } = getPlatformLayout();
@@ -339,17 +365,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Chiêu thức PixelFX tung thẳng sang Boss tức thì
                 effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
-                effects.addDamageNumber(bossX + 15, bossY - 60, damage, true);
-                bossRenderer.triggerHurt();
-
-                // Nếu kết liễu Boss
-                if (data.boss_dead || (data.game_snapshot && data.game_snapshot.boss && data.game_snapshot.boss.is_dead)) {
-                    scheduleVictory(data.game_snapshot.boss, effect);
-                }
+                applyDamageHit(data);
             } 
             // 2. KHI BÌNH LUẬN (chem, lua, bang, set, bom) HOẶC LIKE:
             else {
-                // RA ĐÒN NGAY LẬP TỨC!
+                // Hiển thị diễn hoạt nhân vật & phát âm thanh xuất chiêu
                 if (effect === 'sword_slash') {
                     playerRenderer.triggerAttack(nickname, avatar, skill, effect);
                     sound.playSlash();
@@ -357,8 +377,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     playerRenderer.triggerCast(nickname, avatar, skill, effect);
                     sound.playFireball();
                 } else if (effect === 'lightning') {
+                    // Dũng sĩ niệm chú pháp trận, sấm sét tích tụ năng lượng, CHƯA đánh xuống
                     playerRenderer.triggerCast(nickname, avatar, skill, effect);
-                    sound.playLightning();
                 } else if (effect === 'bomb_blast') {
                     playerRenderer.triggerAttack(nickname, avatar, skill, effect);
                     sound.playBomb();
@@ -373,14 +393,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     sound.playSlash();
                 }
 
-                // Chiêu thức PixelFX tương tác chuẩn với mặt sàn đấu
-                effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
-                effects.addDamageNumber(bossX + 15, bossY - 60, damage, isCrit);
-                bossRenderer.triggerHurt();
-
-                // Nếu kết liễu Boss
-                if (data.boss_dead || (data.game_snapshot && data.game_snapshot.boss && data.game_snapshot.boss.is_dead)) {
-                    scheduleVictory(data.game_snapshot.boss, effect);
+                // ĐỐI VỚI CHIÊU SÉT ("set"):
+                // CHỜ TIA SÉT KHỔNG LỒ TỪ TRỜI ĐÁNH XUỐNG MẶT ĐẤT MỚI TRỪ MÁU, HIỆN SỐ DMG & RUNG CHẤN!
+                if (effect === 'lightning') {
+                    effects.addSkill(effect, bossX, bossY, {
+                        originX: playerX,
+                        originY: playerY,
+                        groundY: groundY,
+                        onHit: () => {
+                            sound.playLightning();
+                            applyDamageHit(data);
+                        }
+                    });
+                } else {
+                    // Các chiêu đánh giáp lá cà hoặc bay nhanh: trừ máu ngay
+                    effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
+                    applyDamageHit(data);
                 }
             }
 
@@ -571,7 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     requestAnimationFrame(gameLoop);
 
-    // Hỗ trợ kiểm thử trực quan nhanh qua query params (vd: ?test_skill=sword_slash)
+    // Hỗ trợ kiểm thử trực quan nhanh qua query params (vd: ?test_skill=lightning)
     const urlParams = new URLSearchParams(window.location.search);
     const testSkill = urlParams.get('test_skill');
     if (testSkill) {
@@ -582,11 +610,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 damage: 15400,
                 is_crit: true,
                 nickname: 'Hero_Gamer',
-                skill: testSkill === 'sword_slash' ? 'Trảm Phong Kiếm' : testSkill
+                skill: testSkill === 'lightning' ? 'Lôi Thần Trừng Phạt' : (testSkill === 'sword_slash' ? 'Trảm Phong Kiếm' : testSkill)
             }
         });
-        // Bước trước vài frame để bắt trọn khoảnh khắc va chạm impact
-        for (let k = 0; k < 5; k++) {
+        const advanceFrames = urlParams.get('frames') ? parseInt(urlParams.get('frames')) : (testSkill === 'lightning' ? 49 : 5);
+        for (let k = 0; k < advanceFrames; k++) {
             effects.update();
         }
     }
