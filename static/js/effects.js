@@ -232,12 +232,16 @@ class VisualSkillEffect {
             }
         }
 
-        // 🌹 Quà 1: Hoa Hồng (Cherry Blossoms rơi từ trời + Heavy Cleave rạch sàn)
+        // 🌹 Quà 1: Hoa Hồng - Vạn Kiếm Quy Tông (Bão kiếm trảm liên hoàn Heavy Cleave + Multi Double Slash)
         else if (this.type === 'gift_rose' || this.type === 'blade_storm') {
             if (this.frame === 1) {
-                effectsManager.triggerScreenShake(8, 14);
-                effectsManager.spawnPixelFX('cherryBlossoms', this.targetX, groundY - 70, 2.8, { duration: 2.5 });
-                effectsManager.spawnPixelFX('doubleSlash', this.targetX, groundY, 3.6, { duration: 1.5 });
+                effectsManager.triggerScreenShake(12, 18);
+                effectsManager.spawnPixelFX('heavyCleave', this.targetX, groundY, 3.5, { duration: 1.8 });
+                effectsManager.spawnPixelFX('doubleSlash', this.targetX - 25, groundY - 25, 3.2, { duration: 1.4 });
+            } else if (this.frame === 12) {
+                effectsManager.spawnPixelFX('doubleSlash', this.targetX + 30, groundY - 45, 3.4, { duration: 1.4 });
+            } else if (this.frame === 24) {
+                effectsManager.spawnPixelFX('dashStrike', this.targetX, groundY, 2.8, { duration: 1.8 });
             }
         }
 

@@ -1,5 +1,105 @@
 // boss.js - Hiển thị & Diễn hoạt Boss tối ưu hiệu năng cao (Zero-Lag)
 
+// LỚP VẦNG HÀO QUANG PROCEDURAL PIXELFX DÀNH RIÊNG CHO BOSS
+class BossAuraFX {
+    constructor(bossType = 'dragon') {
+        this.bossType = bossType;
+        this.inst = null;
+        this.frame = null;
+        this.canvas = null;
+        this.ctx = null;
+        this.imgData = null;
+        this.initFx();
+    }
+
+    initFx() {
+        if (!window.PixelFX || !window.PixelFX.effects || !window.PixelFX.effects.blackHole) {
+            return;
+        }
+        this.mod = window.PixelFX.effects.blackHole;
+        const [w, h] = this.mod.meta.size; // 184 x 132
+        this.w = w;
+        this.h = h;
+        // Tâm hố xoay blackHole là tại ox = 92, oy = 54 (do bt = -70 so với origin 124)
+        this.ox = 92;
+        this.oy = 54;
+
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = w;
+        this.canvas.height = h;
+        this.ctx = this.canvas.getContext('2d');
+        this.imgData = this.ctx.createImageData(w, h);
+
+        this.frame = window.PixelFX.createFrame(w, h);
+        this.palette = this.getPaletteForBoss(this.bossType);
+
+        this.inst = window.PixelFX.createFx(this.mod, {
+            x: this.mod.meta.origin[0],
+            y: this.mod.meta.origin[1],
+            palette: this.palette,
+            seed: 7
+        });
+    }
+
+    getPaletteForBoss(bType) {
+        switch (bType) {
+            case 'dragon': // Ải 1: Hỏa Long Ignis - Lửa rực đỏ cam vàng
+                return ["#1f0b10","#4a1118","#8c1d1c","#cc3a1a","#f2701f","#ffae35","#ffe27a","#ffffff"];
+            case 'titan': // Ải 2: Ma Vương Morzan - Hắc ám tím huyền bí
+                return ["#050308","#0f0a18","#1c1230","#2c1a4a","#432468","#5e3290","#8048b8","#a970e0"];
+            case 'golem': // Ải 3: Titan Nham Thạch Magma - Đất đá dung nham rực lửa
+                return ["#14060a","#380a10","#6e1210","#ac2410","#e8501a","#ff8c2a","#ffd25a","#ffffff"];
+            case 'hydra': // Ải 4: Mãng Xà Độc Vương - Độc tố xanh lục bảo bí ẩn
+                return ["#0d1a0c","#173a14","#265e18","#3f8a1e","#6cb82a","#a8e04a","#e0ff8a","#ffffff"];
+            case 'cyber': // Ải 5: Mecha-X - Ma trận điện tử Cyan Neon
+                return ["#041418","#08303a","#0c5260","#127c8a","#18b0be","#3ce0ec","#94f4ff","#ffffff"];
+            case 'frost': // Ải 6: Băng Thần FrostLord - Hàn băng sương giá xanh tuyết
+                return ["#0c1430","#162c5c","#1f4f94","#2f7fcc","#58b4ec","#9bdcff","#d8f4ff","#ffffff"];
+            case 'zeus': // Ải 7: Lôi Thần Zeus - Sấm sét hoàng kim rực rỡ
+                return ["#1a1500","#3d3200","#6e5a00","#ab8d00","#e8c000","#ffd700","#fff08a","#ffffff"];
+            case 'lich': // Ải 8: Lich King - Tử khí u linh ma thuật
+                return ["#140a26","#2b1252","#481c88","#6b2cc0","#9a48ec","#c684ff","#ecc8ff","#ffffff"];
+            case 'kraken': // Ải 9: Cổ Thần Kraken - Vực thẳm biển sâu xanh dương đậm
+                return ["#040d1a","#081c38","#0e3260","#145090","#2078cc","#48a8ec","#8ce0ff","#ffffff"];
+            case 'phoenix': // Ải 10: Phượng Hoàng Lửa - Lửa thiêng tái sinh cam sáng
+                return ["#2a0a08","#5a1210","#9e2018","#d83c20","#ff6828","#ffa838","#ffe068","#ffffff"];
+            case 'tiger': // Ải 11: Bạch Hổ Chiến Thần - Bạch kim phong lôi & hoàng kim
+                return ["#10141a","#222c38","#3e4e60","#627a94","#8eaec8","#bce0f0","#ffd700","#ffffff"];
+            case 'anubis': // Ải 12: Cơ Giáp Anubis - Cát vàng sa mạc & linh hồn Ai Cập
+                return ["#1c140a","#382814","#5c4220","#8a642e","#ba883e","#e0b050","#ffe488","#ffffff"];
+            default:
+                return ["#1f0b10","#4a1118","#8c1d1c","#cc3a1a","#f2701f","#ffae35","#ffe27a","#ffffff"];
+        }
+    }
+
+    update(dt = 0.016) {
+        if (!this.inst) {
+            this.initFx();
+            if (!this.inst) return;
+        }
+        this.inst.update(dt);
+        window.PixelFX.clearFrame(this.frame);
+        this.inst.draw(this.frame);
+        window.PixelFX.composite(this.frame, this.imgData.data, null);
+        this.ctx.putImageData(this.imgData, 0, 0);
+    }
+
+    draw(ctx, x, y, scale = 2.4, alpha = 0.85) {
+        if (!this.inst) return;
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalAlpha = alpha;
+
+        const dw = this.w * scale;
+        const dh = this.h * scale;
+        const dx = x - this.ox * scale;
+        const dy = y - this.oy * scale;
+
+        ctx.drawImage(this.canvas, dx, dy, dw, dh);
+        ctx.restore();
+    }
+}
+
 class BossRenderer {
     constructor(canvas) {
         this.canvas = canvas;
@@ -9,6 +109,8 @@ class BossRenderer {
         this.healGlow = 0;
         this.deathProgress = 0;
         this.isHealing = false;
+        this.auraFx = null;
+        this.currentAuraType = null;
         this.bossData = {
             name: "Hỏa Long Ignis",
             current_hp: 50000,
@@ -44,6 +146,10 @@ class BossRenderer {
         if (!data) return;
         const wasDead = this.bossData.is_dead;
         this.bossData = Object.assign({}, this.bossData, data);
+        if (data.boss_type && data.boss_type !== this.currentAuraType) {
+            this.currentAuraType = data.boss_type;
+            this.auraFx = new BossAuraFX(this.currentAuraType);
+        }
         if (!wasDead && this.bossData.is_dead) {
             this.deathProgress = 1.0;
         } else if (!this.bossData.is_dead) {
@@ -122,8 +228,19 @@ class BossRenderer {
         ctx.fill();
         ctx.restore();
 
-        // 2. VẼ HÀO QUANG PHÍA SAU BOSS
-        this._drawMagicAura(ctx, centerX, centerBossY, bType);
+        // 2. VẼ VẦNG HÀO QUANG PROCEDURAL PIXELFX PHÍA SAU BOSS
+        if (!this.auraFx || this.currentAuraType !== bType) {
+            this.currentAuraType = bType;
+            this.auraFx = new BossAuraFX(this.currentAuraType);
+        }
+
+        // Cập nhật diễn hoạt hào quang PixelFX
+        this.auraFx.update(0.016);
+
+        // Kích thước hào quang bao trọn và tôn vinh vóc dáng Boss
+        const auraScale = (bossSize / 115) * (this.bossData.rage > 40 ? (1 + (this.bossData.rage - 40) / 100 * 0.22) : 1.0);
+        const auraAlpha = this.bossData.is_dead ? Math.max(0, this.deathProgress) * 0.85 : (this.bossData.rage > 40 ? 0.95 : 0.85);
+        this.auraFx.draw(ctx, centerX, centerBossY, auraScale, auraAlpha);
 
         // 3. VẼ HÌNH ẢNH BOSS ĐỨNG TRÊN MẶT ĐẤT
         if (isLoaded && img.complete) {
@@ -147,69 +264,6 @@ class BossRenderer {
             ctx.restore();
         } else {
             this._drawFallback(ctx, centerX, centerBossY, bossSize);
-        }
-
-        ctx.restore();
-    }
-
-    _drawMagicAura(ctx, x, y, bType) {
-        ctx.save();
-        const rot = this.time * 0.8;
-        let auraColor = '#ff3d00';
-
-        if (bType === 'titan') auraColor = '#7c4dff';
-        else if (bType === 'cyber') auraColor = '#00e5ff';
-        else if (bType === 'frost') auraColor = '#00b0ff';
-        else if (bType === 'golem') auraColor = '#ff6d00';
-        else if (bType === 'hydra') auraColor = '#00e676';
-        else if (bType === 'zeus' || bType === 'thunder') auraColor = '#ffd700';
-        else if (bType === 'lich') auraColor = '#00e5ff';
-        else if (bType === 'kraken') auraColor = '#651fff';
-        else if (bType === 'phoenix') auraColor = '#ff3d00';
-        else if (bType === 'tiger') auraColor = '#00e5ff';
-        else if (bType === 'anubis') auraColor = '#ffd700';
-
-        if (this.healGlow > 0 || this.isHealing) {
-            auraColor = '#00e676';
-        }
-
-        // Hào quang nộ bùng nổ khi nộ > 40% (Vẽ 2 vòng tròn thay cho shadowBlur nặng)
-        if (this.bossData.rage > 40) {
-            const rageScale = 1 + (this.bossData.rage - 40) / 100 * 0.35;
-            const rageAlpha = Math.min(0.5, (this.bossData.rage - 40) / 100 * 0.6);
-            ctx.beginPath();
-            ctx.arc(x, y, 220 * rageScale, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 0, 0, ${rageAlpha * 0.25})`;
-            ctx.fill();
-        }
-
-        // Vòng ma pháp kép (Double Ring nhẹ nhàng)
-        ctx.globalAlpha = 0.4;
-        ctx.strokeStyle = auraColor;
-        ctx.lineWidth = 2.5;
-
-        ctx.beginPath();
-        ctx.arc(x, y, 210, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(x, y, 195, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // 8 tia ma pháp xoay
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 8; i++) {
-            const angle = rot + (i * Math.PI / 4);
-            const ox1 = x + Math.cos(angle) * 190;
-            const oy1 = y + Math.sin(angle) * 190;
-            const ox2 = x + Math.cos(angle) * 225;
-            const oy2 = y + Math.sin(angle) * 225;
-
-            ctx.beginPath();
-            ctx.moveTo(ox1, oy1);
-            ctx.lineTo(ox2, oy2);
-            ctx.stroke();
         }
 
         ctx.restore();

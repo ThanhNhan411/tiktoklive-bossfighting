@@ -320,17 +320,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const isGift = (data.action_type === 'gift') || (effect.startsWith('gift_'));
 
             // 1. KHI NGƯỜI DÙNG TẶNG QUÀ VIP:
-            // ZOOM VÀO DŨNG SĨ ĐỂ TÔN VINH VÀ NẠP NĂNG LƯỢNG
-            // TUYỆT ĐỐI KHÔNG TUNG SKILL CÙNG LÚC ĐỂ TRÁNH CHỒNG HIỆU ỨNG!
+            // TÔN VINH VÀ RA ĐÒN NGAY LẬP TỨC - KHÔNG ZOOM VÀO NHÂN VẬT, KHÔNG LÀM GIÁN ĐOẠN KHUNG NHÌN
             if (isGift) {
-                isGiftZoomActive = true;
-
-                // Zoom vào người chơi bên trái
-                camera.startGiftZoom(playerX, playerY - 35, 1050);
-                playerRenderer.triggerGiftCharge(nickname, avatar, skill, effect, 60);
                 showVipBanner(avatar, nickname, skill, damage);
+                playerRenderer.triggerAttack(nickname, avatar, skill, effect);
 
-                // Phát âm thanh nạp năng lượng quà tặng
+                // Phát âm thanh quà tặng tương ứng
                 if (effect === 'gift_rose' || effect === 'blade_storm') sound.playGiftLaser();
                 else if (effect === 'gift_heart') sound.playCupidArrow();
                 else if (effect === 'gift_donut' || effect === 'meteor_shower') sound.playBomb();
@@ -342,40 +337,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (effect === 'gift_galaxy' || effect === 'ultimate_dragon') sound.playBlackHoleGalaxy();
                 else sound.playGiftLaser();
 
-                // SAU KHI CAMERA ZOOM OUT XONG HOÀN TOÀN TRỞ LẠI TOÀN CẢNH (~1150ms):
-                // MỚI BẮT ĐẦU TUNG CHIÊU SANG BOSS ĐỂ NGƯỜI XEM THẤY RÕ 100% HIỆU ỨNG!
-                setTimeout(() => {
-                    isGiftZoomActive = false;
+                // Chiêu thức PixelFX tung thẳng sang Boss tức thì
+                effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
+                effects.addDamageNumber(bossX + 15, bossY - 60, damage, true);
+                bossRenderer.triggerHurt();
 
-                    // Dũng sĩ vung đòn chém
-                    playerRenderer.triggerAttack(nickname, avatar, skill, effect);
-
-                    // Hiệu ứng PixelFX tương tác chuẩn xác mặt đất
-                    effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
-                    effects.addDamageNumber(bossX + 20, bossY - 70, damage, true);
-                    bossRenderer.triggerHurt();
-
-                    // Nếu kết liễu Boss
-                    if (data.boss_dead || (data.game_snapshot && data.game_snapshot.boss && data.game_snapshot.boss.is_dead)) {
-                        scheduleVictory(data.game_snapshot.boss, effect);
-                    }
-
-                    // Giải phóng các đòn đánh thường đang chờ trong hàng đợi
-                    if (pendingActions.length > 0) {
-                        const queued = pendingActions.shift();
-                        setTimeout(() => handleServerEvent(queued), 280);
-                    }
-                }, 1150);
+                // Nếu kết liễu Boss
+                if (data.boss_dead || (data.game_snapshot && data.game_snapshot.boss && data.game_snapshot.boss.is_dead)) {
+                    scheduleVictory(data.game_snapshot.boss, effect);
+                }
             } 
             // 2. KHI BÌNH LUẬN (chem, lua, bang, set, bom) HOẶC LIKE:
             else {
-                // Nếu camera đang trong khoảnh khắc Zoom tặng quà VIP -> Tạm giữ lại trong hàng đợi để không che mất hiệu ứng VIP
-                if (isGiftZoomActive) {
-                    pendingActions.push(event);
-                    return;
-                }
-
-                // KHÔNG ZOOM, RA ĐÒN NGAY LẬP TỨC!
+                // RA ĐÒN NGAY LẬP TỨC!
                 if (effect === 'sword_slash') {
                     playerRenderer.triggerAttack(nickname, avatar, skill, effect);
                     sound.playSlash();
@@ -401,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Chiêu thức PixelFX tương tác chuẩn với mặt sàn đấu
                 effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
-                effects.addDamageNumber(bossX + 20, bossY - 70, damage, isCrit);
+                effects.addDamageNumber(bossX + 15, bossY - 60, damage, isCrit);
                 bossRenderer.triggerHurt();
 
                 // Nếu kết liễu Boss
