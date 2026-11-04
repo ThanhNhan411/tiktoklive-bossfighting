@@ -103,7 +103,7 @@ class BossRenderer {
 
         // 2. VẼ BOSS (TỐI ƯU KHÔNG DÙNG CTX.FILTER)
         const isPortrait = this.canvas.height > this.canvas.width;
-        const baseSize = isPortrait ? Math.min(this.canvas.width * 0.58, 480) : 430;
+        const baseSize = isPortrait ? Math.min(this.canvas.width * 0.48, 380) : 420;
         const bossSize = baseSize * breathScale;
 
         if (isLoaded && img.complete) {
