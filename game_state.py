@@ -19,7 +19,7 @@ class Boss:
         self.killer = None
         self.is_poisoned = False
         self.poison_end_time = 0
-        self.poison_dmg_per_tick = 15
+        self.poison_dmg_per_tick = 50
         self.last_poison_tick = 0
         self.poison_start_time = 0
         self.poison_ticks_done = 0
@@ -46,8 +46,8 @@ class Boss:
         self.current_hp += actual_heal
         return actual_heal
 
-    def apply_poison(self, duration=5, damage_per_tick=15):
-        """Đầu độc Boss: rút máu liên tục theo thời gian (5 giây, mỗi giây 15 máu)."""
+    def apply_poison(self, duration=4, damage_per_tick=50):
+        """Đầu độc Boss: rút máu liên tục theo thời gian (4 giây, mỗi giây 50 máu)."""
         if self.is_dead:
             return False
         now = time.time()
@@ -61,7 +61,7 @@ class Boss:
         return True
 
     def check_poison_tick(self):
-        """Trừ máu độc đúng nhịp mỗi 1 giây: tổng 5 tick x 15 máu (không trôi nhịp)."""
+        """Trừ máu độc đúng nhịp mỗi 1 giây: tổng 4 tick x 50 máu (không trôi nhịp)."""
         if not self.is_poisoned or self.is_dead:
             return 0, False, False
         now = time.time()

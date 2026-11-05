@@ -485,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
                 // 2.3. ĐỐI VỚI CHIÊU ĐỘC TỐ ("doc"):
-                // NỔ AXIT LỤC BẢO TRÊN BOSS & BẮT ĐẦU RÚT MÁU ĐỘC (15 HP/S TRONG 5S)
+                // NỔ AXIT LỤC BẢO TRÊN BOSS & BẮT ĐẦU RÚT MÁU ĐỘC (50 HP/S TRONG 4S)
                 else if (effect === 'poison_sting') {
                     effects.addSkill('poison_sting', bossX, bossY, {
                         originX: playerX,
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // BOSS TẤNG CÔNG NGƯỢC LẠI DŨNG SĨ VỚI CÁC SKILL ĐẶC BIỆT
             const skillName = data.skill_name || 'Cầu Lửa Hắc Ám';
             const effect = data.effect || 'boss_fireball';
-            const damage = data.damage || 150;
+            const damage = data.damage || 500;
 
             if (effect === 'boss_fireball') sound.playFireball();
             else if (effect === 'boss_lightning') sound.playLightning();
@@ -567,8 +567,8 @@ document.addEventListener('DOMContentLoaded', () => {
             addCombatFeed(bossRenderer.bossData.name || 'Boss', skillName, damage, '');
 
         } else if (type === 'boss_poison_tick') {
-            // RÚT MÁU ĐỘC TỐ ĐỊNH KỲ CỦA BOSS (15 HP/S)
-            const poisonDmg = data.damage || 15;
+            // RÚT MÁU ĐỘC TỐ ĐỊNH KỲ CỦA BOSS (50 HP/S)
+            const poisonDmg = data.damage || 50;
             effects.addDamageNumber(bossX + 20, bossY - 60, poisonDmg, false, "-🧪 ");
             bossRenderer.triggerHurt();
             if (data.game_snapshot) {

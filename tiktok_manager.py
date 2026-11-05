@@ -282,7 +282,7 @@ class TikTokManager:
         elif any(w in text_lower for w in ["doc", "độc", "poison", "toxic", "venom"]):
             skill_name = "Kịch Độc Ma Thuật"
             effect_type = "poison_sting"
-            raw_dmg = 0  # Độc không trừ máu thẳng: chỉ rút từ từ 15 máu/giây trong 5 giây
+            raw_dmg = 0  # Độc không trừ máu thẳng: chỉ rút từ từ 50 máu/giây trong 4 giây
             is_poison = True
         else:
             # Comment thường thành đạn chữ bay vào boss (cân bằng 200 DMG)
@@ -301,9 +301,9 @@ class TikTokManager:
         event_data["effect"] = effect_type
         event_data["comment_text"] = comment_text
 
-        # Áp dụng độc tố lên Boss (kéo dài 5 giây, mỗi giây trừ 15 máu)
+        # Áp dụng độc tố lên Boss (kéo dài 4 giây, mỗi giây trừ 50 máu)
         if is_poison:
-            self.game_state.boss.apply_poison(duration=5, damage_per_tick=15)
+            self.game_state.boss.apply_poison(duration=4, damage_per_tick=50)
             event_data["is_poison"] = True
 
         # Nếu kích hoạt cảnh báo Nộ Boss (đầy 100% nộ)

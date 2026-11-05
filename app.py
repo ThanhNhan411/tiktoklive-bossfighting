@@ -73,7 +73,7 @@ def _boss_combat_worker():
     while True:
         time.sleep(0.25)
         try:
-            # 1. Rút máu khi Boss bị trúng độc (5 giây, mỗi giây 15 HP)
+            # 1. Rút máu khi Boss bị trúng độc (4 giây, mỗi giây 50 HP)
             poison_dmg, is_poisoned, ended = game_state.boss.check_poison_tick()
             if poison_dmg > 0:
                 broadcast_event("boss_poison_tick", {
@@ -474,8 +474,8 @@ def api_boss_attack_player():
 def api_boss_poison():
     """Đầu độc Boss (Giả lập / Test)."""
     data = request.get_json() or {}
-    dur = int(data.get("duration", 8))
-    dpt = int(data.get("damage_per_tick", 90))
+    dur = int(data.get("duration", 4))
+    dpt = int(data.get("damage_per_tick", 50))
     game_state.boss.apply_poison(duration=dur, damage_per_tick=dpt)
     broadcast_event("boss_poisoned", {
         "boss": game_state.boss.to_dict(),
