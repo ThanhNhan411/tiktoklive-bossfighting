@@ -231,25 +231,32 @@ class VisualSkillEffect {
             }
         }
 
-        // 2. Cầu Lửa (dùng arcane/arcane-missiles phóng vào tâm ngực Boss - Palette Blood)
+        // 2. Cầu Lửa: 3 quả cầu lửa lần lượt xuất phát từ người chơi, nổ giữa thân Boss khi chạm
         else if (this.type === 'fireball') {
-            if (this.frame === 1) {
-                effectsManager.triggerScreenShake(7, 10);
-                // Đạn ma thuật lửa phóng từ người chơi bay thẳng vào tâm Boss
-                effectsManager.spawnPixelFX('arcane/arcane-missiles', originX + 30, this.targetY, 2.3, {
-                    duration: 1.2,
+            const launchY = (this.options.originY || groundY) - 50;   // tầm tay/ngực người chơi
+            const launches = [1, 7, 13];
+            const flight = 0.36;                                      // giây bay tới boss
+            const arriveFrames = launches.map(f => f + Math.round(flight / 0.016));
+            const idx = launches.indexOf(this.frame);
+            if (idx !== -1) {
+                if (idx === 0) effectsManager.triggerScreenShake(5, 8);
+                effectsManager.spawnPixelFX('fire/fireball', originX + 40, launchY, 1.8, {
+                    duration: flight + 0.02,
                     move: true,
-                    startX: originX + 30,
-                    startY: this.targetY,
+                    startX: originX + 40,
+                    startY: launchY,
                     targetX: this.targetX,
                     targetY: this.targetY,
-                    moveDuration: 0.36
+                    moveDuration: flight
                 });
-            } else if (this.frame === 12) {
-                // ĐÚNG THỜI ĐIỂM CHẠM VÀO TÂM BOSS: Bùng nổ sát thương huyết sắc!
-                effectsManager.triggerScreenShake(10, 14);
-                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.2, { duration: 0.8 });
-                if (typeof this.options.onHit === 'function') {
+            }
+            const hitIdx = arriveFrames.indexOf(this.frame);
+            if (hitIdx !== -1) {
+                // Nổ ngay giữa thân Boss (gốc vụ nổ nằm ở đáy nên dời xuống để lõi nổ trùng tâm ngực)
+                const last = hitIdx === arriveFrames.length - 1;
+                effectsManager.triggerScreenShake(last ? 12 : 7, last ? 14 : 8);
+                effectsManager.spawnPixelFX('explosions/small-explosion', this.targetX + (hitIdx - 1) * 14, this.targetY + 55, last ? 2.0 : 1.5, { duration: last ? 1.6 : 1.2 });
+                if (hitIdx === 0 && typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
             }
@@ -438,40 +445,17 @@ class VisualSkillEffect {
             }
         }
 
-        // 🍩 Quà 3: Donut (Bão thiên thạch đa hướng chạm đất nổ - Palette Blood)
+        // 🍩 Quà 3: Donut - 2 thiên thạch 2 bên rơi cùng lúc, nổ khi chạm đất (va chạm ở ~0.57s)
         else if (this.type === 'gift_donut' || this.type === 'meteor_shower') {
-            // Thiên thạch 1: Từ góc trên trái rơi xuống mép trái
             if (this.frame === 1) {
-                effectsManager.spawnPixelFX('fire/meteor', this.targetX - 45, groundY, 2.5, { duration: 2.2, flip: false, seed: 1 });
-            }
-            // Thiên thạch 2: Từ góc trên phải rơi xuống mép phải
-            else if (this.frame === 10) {
-                effectsManager.spawnPixelFX('fire/meteor', this.targetX + 50, groundY, 2.5, { duration: 2.2, flip: true, seed: 5 });
-            }
-            // NỔ ĐÚNG KHOẢNH KHẮC THIÊN THẠCH 1 CHẠM ĐẤT: Trừ máu và rung chuyển sàn đấu!
-            else if (this.frame === 19) {
-                effectsManager.triggerScreenShake(16, 20);
-                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX - 45, groundY, 2.4, { duration: 1.8 });
+                effectsManager.spawnPixelFX('fire/meteor', this.targetX - 70, groundY, 2.5, { duration: 2.2, flip: false, seed: 1 });
+                effectsManager.spawnPixelFX('fire/meteor', this.targetX + 70, groundY, 2.5, { duration: 2.2, flip: true, seed: 5 });
+            } else if (this.frame === 37) {
+                // Khoảnh khắc cả 2 thiên thạch chạm đất: rung sàn + trừ máu
+                effectsManager.triggerScreenShake(18, 22);
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
-            }
-            // Thiên thạch 3: Từ góc trên trái rơi xuống chính giữa
-            else if (this.frame === 22) {
-                effectsManager.spawnPixelFX('fire/meteor', this.targetX, groundY, 2.6, { duration: 2.2, flip: false, seed: 9 });
-            } else if (this.frame === 28) {
-                effectsManager.triggerScreenShake(16, 20);
-                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX + 50, groundY, 2.4, { duration: 1.8 });
-            }
-            // Thiên thạch 4: Từ góc trên phải rơi xuống
-            else if (this.frame === 32) {
-                effectsManager.spawnPixelFX('fire/meteor', this.targetX + 15, groundY, 2.5, { duration: 2.2, flip: true, seed: 12 });
-            } else if (this.frame === 40) {
-                effectsManager.triggerScreenShake(18, 24);
-                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX, groundY, 2.6, { duration: 1.8 });
-            } else if (this.frame === 50) {
-                effectsManager.triggerScreenShake(18, 24);
-                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX + 15, groundY, 2.5, { duration: 1.8 });
             }
         }
 
