@@ -63,6 +63,7 @@ class PixelFXInstance {
         this.growDuration = customOptions.growDuration || (this.maxDuration * 0.7);
 
         // Tùy chọn di chuyển quỹ đạo (trajectory/movement): bay thẳng tới tâm mục tiêu
+        this.aim = customOptions.aim || null;
         this.isMoving = customOptions.move || false;
         if (this.isMoving) {
             this.startX = customOptions.startX ?? x;
@@ -125,6 +126,20 @@ class PixelFXInstance {
         if (this.isDead) return;
         mainCtx.save();
         mainCtx.imageSmoothingEnabled = false; // Chuẩn Retro Pixel Art sắc nét
+
+        // Chế độ ngắm (aim): xoay + kéo giãn hiệu ứng để điểm xuất phát nằm ở tay nhân vật, điểm trúng nằm đúng tâm Boss
+        if (this.aim) {
+            const a = this.aim;
+            const dx = a.tx - a.sx, dy = a.ty - a.sy;
+            const sxScale = Math.hypot(dx, dy) / (a.targetDist - a.startOff);
+            const syScale = Math.min(3.2, Math.max(1.6, sxScale));
+            mainCtx.translate(a.sx, a.sy);
+            mainCtx.rotate(Math.atan2(dy, dx));
+            mainCtx.scale(sxScale, syScale);
+            mainCtx.drawImage(this.canvas, -(this.ox + a.startOff), -(this.oy + a.startY), this.w, this.h);
+            mainCtx.restore();
+            return;
+        }
 
         const drawW = this.w * this.scale;
         const drawH = this.h * this.scale;
@@ -195,7 +210,7 @@ class VisualSkillEffect {
     _getMaxFrames(type) {
         switch (type) {
             case 'sword_slash': return 40;
-            case 'fireball': return 60;
+            case 'fireball': return 110;
             case 'lightning': return 85;
             case 'ice_shard': return 70;
             case 'bomb_blast': return 70;
@@ -243,24 +258,21 @@ class VisualSkillEffect {
             }
         }
 
-        // 2. Cầu Lửa: arcane/arcane-missiles phủ palette lửa, bay từ người chơi tới giữa thân Boss, không nổ
+        // 2. Cầu Lửa: arcane/arcane-missiles palette lửa, xuất phát từ tay người chơi, trúng đúng tâm thân Boss, không nổ thêm
         else if (this.type === 'fireball') {
-            const launchY = (this.options.originY || groundY) - 50;   // tầm tay/ngực người chơi
-            const flight = 0.36;                                      // giây bay tới boss
+            const handX = originX + 28;
+            const handY = (this.options.originY || groundY) - 38;      // tay nhân vật (sprite scale 1.35)
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(5, 8);
-                effectsManager.spawnPixelFX('arcane/arcane-missiles', originX + 30, launchY, 2.3, {
-                    duration: 1.2,
+                effectsManager.spawnPixelFX('arcane/arcane-missiles', handX, handY, 1, {
+                    duration: 1.75,
                     palette: FIRE_PALETTE,
-                    move: true,
-                    startX: originX + 30,
-                    startY: launchY,
-                    targetX: this.targetX,
-                    targetY: this.targetY,
-                    moveDuration: flight
+                    // Trong hiệu ứng: đạn rời tay ở (15,-24), trúng mục tiêu ở (152,-22) so với gốc
+                    aim: { sx: handX, sy: handY, tx: this.targetX, ty: this.targetY, startOff: 15, startY: -24, targetDist: 152 }
                 });
-            } else if (this.frame === 1 + Math.round(flight / 0.016)) {
-                effectsManager.triggerScreenShake(8, 8);
+            } else if (this.frame === 44) {
+                // Loạt đạn đầu tiên chạm Boss (~0.7s)
+                effectsManager.triggerScreenShake(9, 10);
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
