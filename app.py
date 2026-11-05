@@ -83,7 +83,31 @@ def _boss_combat_worker():
                     "boss": game_state.boss.to_dict()
                 })
 
-            # 2. Boss tự động phản công Dũng Sĩ theo chu kỳ
+            # 2. Kiểm tra cảnh báo Nộ Boss (5 giây)
+            if game_state.rage_warning_active:
+                if time.time() >= game_state.rage_warning_end_time:
+                    success, shielded, actual_dmg, shield_by = game_state.execute_boss_rage()
+                    if success:
+                        if shielded:
+                            broadcast_event("boss_rage_execute", {
+                                "boss_name": game_state.boss.name,
+                                "shielded": True,
+                                "shield_by": shield_by,
+                                "message": f"🛡️ @{shield_by} đã hô 'HỘ GIÁ!' thành công! Khiên Ngưng Đọng Thời Gian đã cứu mạng Dũng Sĩ khỏi Nộ Hủy Diệt!",
+                                "player": game_state.player.to_dict(),
+                                "boss": game_state.boss.to_dict()
+                            })
+                        else:
+                            broadcast_event("boss_rage_execute", {
+                                "boss_name": game_state.boss.name,
+                                "shielded": False,
+                                "damage": actual_dmg,
+                                "message": f"💥 {game_state.boss.name} xả NỘ HỦY DIỆT trúng Dũng Sĩ làm Dũng Sĩ gục ngã ngay lập tức! Thả tim để hồi sinh!",
+                                "player": game_state.player.to_dict(),
+                                "boss": game_state.boss.to_dict()
+                            })
+
+            # 3. Boss tự động phản công Dũng Sĩ theo chu kỳ
             now = time.time()
             if (game_state.boss_auto_attack_enabled and 
                 not game_state.boss.is_dead and 
@@ -272,15 +296,29 @@ def api_boss_reset():
 
 @app.route("/api/boss/rage_attack", methods=["POST"])
 def api_boss_rage_attack():
-    """Boss xả nộ phản công."""
-    with game_state.lock:
-        game_state.boss.reset_rage()
-    broadcast_event("boss_attack", {
-        "boss_name": game_state.boss.name,
-        "skill": "SÓNG XUNG KÍCH HUỶ DIỆT (ROAR OF DOOM)",
-        "message": f"⚠️ {game_state.boss.name} đã thịnh nộ và tung đòn phản công cực mạnh!"
+    """Boss kích hoạt Nộ (cảnh báo 5 giây)."""
+    started = game_state.start_rage_warning(duration=5.0)
+    if started:
+        broadcast_event("boss_rage_warning", {
+            "boss_name": game_state.boss.name,
+            "countdown": 5,
+            "message": f"⚠️ {game_state.boss.name} đã tích đầy NỘ! Chuẩn bị xả Nộ Hủy Diệt sau 5s! Comment 'hộ giá' để kích hoạt khiên!"
+        })
+        return jsonify({"success": True, "message": "Đã bắt đầu đếm ngược 5 giây cảnh báo Nộ Boss!"})
+    return jsonify({"success": False, "message": "Không thể kích nộ (Boss hoặc Dũng Sĩ đã chết)"})
+
+@app.route("/api/boss/shield", methods=["POST"])
+def api_boss_shield():
+    """Kích hoạt Khiên Hộ Giá cho Dũng Sĩ."""
+    data = request.get_json() or {}
+    nickname = data.get("nickname", "Hiệp Sĩ Live")
+    game_state.activate_shield(nickname)
+    broadcast_event("shield_activated", {
+        "nickname": nickname,
+        "message": f"🛡️ @{nickname} đã hô 'HỘ GIÁ!' kích hoạt Khiên Ngưng Đọng Thời Gian bảo vệ Dũng Sĩ!",
+        "player": game_state.player.to_dict()
     })
-    return jsonify({"success": True})
+    return jsonify({"success": True, "message": "Đã kích hoạt khiên Hộ Giá!"})
 
 @app.route("/api/config/hp", methods=["POST"])
 def api_config_hp():

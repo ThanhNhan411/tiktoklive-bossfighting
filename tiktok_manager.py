@@ -234,14 +234,35 @@ class TikTokManager:
                     })
                 return
 
-        # Nhận diện kỹ năng qua từ khóa
+        # Hộ Giá: Người dùng chat "hộ giá" để kích hoạt Khiên Time-Stop bảo vệ Dũng Sĩ trước đòn Nộ
+        if any(w in text_lower for w in ["ho gia", "hộ giá", "hogia", "hộ gia", "ho giá"]):
+            self.game_state.activate_shield(nickname)
+            self._broadcast("shield_activated", {
+                "nickname": nickname,
+                "avatar": avatar,
+                "player": self.game_state.player.to_dict(),
+                "message": f"🛡️ @{nickname} đã hô 'HỘ GIÁ!' kích hoạt Khiên Ngưng Đọng Thời Gian bảo vệ Dũng Sĩ!"
+            })
+            event_data = self.game_state.register_attack(
+                user_id=user_id,
+                nickname=nickname,
+                avatar=avatar,
+                raw_damage=200,
+                skill_name="Hộ Giá Thần Thuẫn",
+                action_type="comment"
+            )
+            event_data["effect"] = "player_shield"
+            event_data["comment_text"] = comment_text
+            self._broadcast("action", event_data)
+            return event_data
+
+        # Nhận diện kỹ năng qua từ khóa - TẤT CẢ SKILL CMT CÂN BẰNG BẰNG DMG NHAU (200 HP)
         is_poison = False
-        is_heal = False
 
         if any(w in text_lower for w in ["chem", "chém", "slash", "kiem", "kiếm", "danh", "đánh"]):
             skill_name = "Trảm Phong Kiếm"
             effect_type = "sword_slash"
-            raw_dmg = 100
+            raw_dmg = 200
         elif any(w in text_lower for w in ["lua", "lửa", "fire", "hoa", "hỏa", "chay", "cháy"]):
             skill_name = "Cầu Lửa Hủy Diệt"
             effect_type = "fireball"
@@ -253,26 +274,21 @@ class TikTokManager:
         elif any(w in text_lower for w in ["set", "sét", "thunder", "loi", "lôi", "dien", "điện"]):
             skill_name = "Lôi Thần Trừng Phạt"
             effect_type = "lightning"
-            raw_dmg = 350
+            raw_dmg = 200
         elif any(w in text_lower for w in ["bom", "bomb", "no", "nổ", "boom"]):
             skill_name = "Bộc Phá Ma Thuật"
             effect_type = "bomb_blast"
-            raw_dmg = 450
+            raw_dmg = 200
         elif any(w in text_lower for w in ["doc", "độc", "poison", "toxic", "venom"]):
             skill_name = "Kịch Độc Ma Thuật"
             effect_type = "poison_sting"
-            raw_dmg = 150
+            raw_dmg = 200
             is_poison = True
-        elif any(w in text_lower for w in ["heal", "hoi mau", "hồi máu", "buff"]):
-            skill_name = "Thánh Quang Hồi Máu"
-            effect_type = "holy_heal"
-            raw_dmg = 80
-            is_heal = True
         else:
-            # Comment thường thành đạn chữ bay vào boss
+            # Comment thường thành đạn chữ bay vào boss (cân bằng 200 DMG)
             skill_name = f"Ngọc Chữ: {comment_text[:20]}"
             effect_type = "text_bullet"
-            raw_dmg = 60
+            raw_dmg = 200
 
         event_data = self.game_state.register_attack(
             user_id=user_id,
@@ -285,18 +301,21 @@ class TikTokManager:
         event_data["effect"] = effect_type
         event_data["comment_text"] = comment_text
 
-        # Áp dụng độc tố lên Boss
+        # Áp dụng độc tố lên Boss (kéo dài 5 giây, mỗi giây trừ 15 máu)
         if is_poison:
-            self.game_state.boss.apply_poison(duration=7, damage_per_tick=80)
+            self.game_state.boss.apply_poison(duration=5, damage_per_tick=15)
             event_data["is_poison"] = True
 
-        # Hồi máu cho Dũng Sĩ người chơi
-        if is_heal:
-            healed = self.game_state.heal_player(180, nickname)
-            event_data["healed_player"] = healed
-            event_data["player"] = self.game_state.player.to_dict()
+        # Nếu kích hoạt cảnh báo Nộ Boss (đầy 100% nộ)
+        if event_data.get("trigger_rage_warning"):
+            self._broadcast("boss_rage_warning", {
+                "boss_name": self.game_state.boss.name,
+                "countdown": 5,
+                "message": f"⚠️ {self.game_state.boss.name} đã tích đầy NỘ! Chuẩn bị xả Nộ Hủy Diệt trong 5s! Comment 'hộ giá' để kích hoạt khiên!"
+            })
 
         self._broadcast("action", event_data)
+        return event_data
 
     def _handle_gift(self, event):
         user_id, nickname, avatar = self._get_user_info(event.user)
@@ -339,7 +358,7 @@ class TikTokManager:
         if any(k in gift_name_lower for k in ["galaxy", "thiên hà", "universe", "vũ trụ", "dragon", "rồng", "whale", "cá voi"]):
             skill_name = f"🌌 HỐ ĐEN VŨ TRỤ & RỒNG THẦN ({gift_name} x{count})"
             effect_type = "gift_galaxy"
-            raw_dmg = max(80000, diamonds * 2500)
+            raw_dmg = max(2500000, diamonds * 2500)
 
         elif any(k in gift_name_lower for k in ["lion", "sư tử", "tiger", "hổ"]):
             skill_name = f"🦁 SƯ TỬ LỬA THẦN THÁNH ({gift_name} x{count})"
@@ -347,12 +366,12 @@ class TikTokManager:
             raw_dmg = max(45000, diamonds * 2000)
 
         elif any(k in gift_name_lower for k in ["car", "xe", "ferrari", "lamborghini", "siêu xe", "moto"]):
-            skill_name = f"🏎️ CHIẾN MÃ SIÊU THANH ({gift_name} x{count})"
+            skill_name = f"🩸 QUỶ VỰC HUYẾT THỦ ({gift_name} x{count})"
             effect_type = "gift_car"
             raw_dmg = max(25000, diamonds * 1800)
 
         elif any(k in gift_name_lower for k in ["corgi", "chó", "mèo", "cat", "pet", "thú"]):
-            skill_name = f"🐺 BẦY SÓI THẦN CUỒNG PHONG ({gift_name} x{count})"
+            skill_name = f"🩸 HUYẾT MA BẠO TẠC ({gift_name} x{count})"
             effect_type = "gift_corgi"
             raw_dmg = max(15000, diamonds * 1700)
 
@@ -386,7 +405,7 @@ class TikTokManager:
             if diamonds >= 1000:
                 skill_name = f"🌌 HỐ ĐEN VŨ TRỤ ({gift_name} x{count})"
                 effect_type = "gift_galaxy"
-                raw_dmg = diamonds * 2500
+                raw_dmg = max(2500000, diamonds * 2500)
             elif diamonds >= 500:
                 skill_name = f"🦁 SƯ TỬ LỬA THẦN THÁNH ({gift_name} x{count})"
                 effect_type = "gift_lion"
@@ -421,6 +440,7 @@ class TikTokManager:
         event_data["diamonds"] = diamonds
         event_data["gift_count"] = count
         self._broadcast("action", event_data)
+        return event_data
 
     def _handle_follow(self, event):
         user_id, nickname, avatar = self._get_user_info(event.user)

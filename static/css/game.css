@@ -187,6 +187,38 @@ body {
     100% { transform: scale(1.02); opacity: 1; }
 }
 
+/* CẢNH BÁO BOSS TÍCH NỘ CỰC ĐẠI */
+.rage-alert {
+    position: relative;
+    margin-top: 6px;
+    background: linear-gradient(135deg, rgba(180, 0, 0, 0.95), rgba(70, 0, 0, 0.95));
+    border: 2px solid #ff1744;
+    color: #fff;
+    font-weight: 900;
+    font-size: 11px;
+    padding: 6px 16px;
+    border-radius: 18px;
+    box-shadow: 0 0 25px rgba(255, 23, 68, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: rageAlertPulse 0.5s infinite alternate;
+    letter-spacing: 0.5px;
+    z-index: 35;
+    text-align: center;
+}
+
+@keyframes rageAlertPulse {
+    0% { transform: scale(0.97); box-shadow: 0 0 15px rgba(255, 23, 68, 0.6); }
+    100% { transform: scale(1.03); box-shadow: 0 0 35px rgba(255, 23, 68, 1); }
+}
+
+.rage-alert .timer-highlight {
+    color: #ffea00;
+    font-size: 13px;
+    font-weight: 900;
+}
+
 /* BUFF BANNER */
 .buff-banner {
     position: relative;

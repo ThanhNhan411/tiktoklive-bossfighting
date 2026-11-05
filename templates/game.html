@@ -40,6 +40,12 @@
             <div id="regenAlert" class="regen-alert hidden">
                 <span>⚠️ QUÁI VẬT ĐANG HỒI MÁU! THẢ TIM/CHAT ĐỂ NGĂN CHẶN!</span>
             </div>
+
+            <!-- BOSS RAGE ALERT (5S WARNING) -->
+            <div id="rageAlert" class="rage-alert hidden">
+                <span>⚠️ BOSS TÍCH NỘ CỰC ĐẠI! ĐÒN TỬ THẦN TRONG <span id="rageTimer" class="timer-highlight">5</span>S!</span>
+                <span>(Chat <strong>"hộ giá"</strong> để bật Khiên Thời Gian!)</span>
+            </div>
         </div>
 
         <!-- VIP BANNER (KHI CÓ QUÀ HOẶC ĐÒN VIP) -->
@@ -72,31 +78,31 @@
                     </div>
                     <div class="skill-row">
                         <span class="skill-trigger">💬 "chem"</span>
-                        <span class="skill-desc">Trảm Phong Kiếm</span>
+                        <span class="skill-desc">Trảm Phong Kiếm (200)</span>
                     </div>
                     <div class="skill-row">
                         <span class="skill-trigger">💬 "lua"</span>
-                        <span class="skill-desc">Cầu Lửa Nổ</span>
+                        <span class="skill-desc">Tia Ma Lực (200)</span>
                     </div>
                     <div class="skill-row">
                         <span class="skill-trigger">💬 "bang"</span>
-                        <span class="skill-desc">Băng Thiên Tiễn</span>
+                        <span class="skill-desc">Băng Thiên Trụ (200)</span>
                     </div>
                     <div class="skill-row">
                         <span class="skill-trigger">💬 "set"</span>
-                        <span class="skill-desc">Lôi Thần Trừng Phạt</span>
+                        <span class="skill-desc">Lôi Thần Trừng Phạt (200)</span>
                     </div>
                     <div class="skill-row">
                         <span class="skill-trigger">💬 "bom"</span>
-                        <span class="skill-desc">Bộc Phá Ma Thuật</span>
+                        <span class="skill-desc">Cầu Lửa Bộc Phá (200)</span>
                     </div>
                     <div class="skill-row">
                         <span class="skill-trigger">🧪 "doc"</span>
-                        <span class="skill-desc">Kịch Độc Ma Thuật</span>
+                        <span class="skill-desc">Axit Ăn Mòn (200 + 15/s)</span>
                     </div>
-                    <div class="skill-row">
-                        <span class="skill-trigger">✨ "heal"</span>
-                        <span class="skill-desc">Thánh Quang Hồi Máu</span>
+                    <div class="skill-row" style="background: rgba(0, 229, 255, 0.15);">
+                        <span class="skill-trigger" style="color: #00e5ff;">🛡️ "hộ giá"</span>
+                        <span class="skill-desc" style="color: #00e5ff;">Khiên Thời Gian (Chặn Nộ)</span>
                     </div>
                     <div class="skill-row">
                         <span class="skill-trigger">🌹 Hoa Hồng (1x)</span>
@@ -104,7 +110,11 @@
                     </div>
                     <div class="skill-row">
                         <span class="skill-trigger">💖 Trái Tim (10x)</span>
-                        <span class="skill-desc">Mũi Tên Cupid</span>
+                        <span class="skill-desc">Mũi Tên Cupid (Huyết)</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">🍩 Donut (30x)</span>
+                        <span class="skill-desc">Bão Thiên Thạch Đa Hướng</span>
                     </div>
                     <div class="skill-row">
                         <span class="skill-trigger">🚀 Tên Lửa (100x)</span>
@@ -115,12 +125,20 @@
                         <span class="skill-desc">Thánh Kiếm Excalibur</span>
                     </div>
                     <div class="skill-row">
-                        <span class="skill-trigger">🦁 Sư Tử / Xe</span>
-                        <span class="skill-desc">Sư Tử Lửa / Siêu Xe</span>
+                        <span class="skill-trigger">🐶 Corgi (299x)</span>
+                        <span class="skill-desc">Huyết Ma Bạo Tạc</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">🏎️ Siêu Xe (500x)</span>
+                        <span class="skill-desc">Quỷ Vực Huyết Thủ</span>
+                    </div>
+                    <div class="skill-row">
+                        <span class="skill-trigger">🦁 Sư Tử (1000x)</span>
+                        <span class="skill-desc">Sư Tử Lửa Thần Thánh</span>
                     </div>
                     <div class="skill-row">
                         <span class="skill-trigger">🌌 Galaxy (1000x)</span>
-                        <span class="skill-desc">HỐ ĐEN & RỒNG THẦN</span>
+                        <span class="skill-desc">HỐ ĐEN RỒNG THẦN (-2.5M)</span>
                     </div>
                     <div class="skill-row">
                         <span class="skill-trigger">➕ Follow/Share</span>

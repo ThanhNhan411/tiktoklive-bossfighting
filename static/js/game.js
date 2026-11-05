@@ -85,10 +85,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const buffBannerEl = document.getElementById('buffBanner');
     const buffTimerEl = document.getElementById('buffTimer');
     const regenAlertEl = document.getElementById('regenAlert');
+    const rageAlertEl = document.getElementById('rageAlert');
+    const rageTimerEl = document.getElementById('rageTimer');
     const connectionStatusEl = document.getElementById('connectionStatus');
     const victoryOverlayEl = document.getElementById('victoryOverlay');
     const victoryBossNameEl = document.getElementById('victoryBossName');
     const victoryKillerEl = document.getElementById('victoryKiller');
+
+    // Quản lý cảnh báo đòn nộ 5 giây của Boss
+    let rageCountdownTimer = null;
+    function showRageWarning(durationSeconds = 5.0) {
+        if (!rageAlertEl) return;
+        rageAlertEl.classList.remove('hidden');
+        let remaining = Math.round(durationSeconds);
+        if (rageTimerEl) rageTimerEl.textContent = remaining;
+
+        clearInterval(rageCountdownTimer);
+        rageCountdownTimer = setInterval(() => {
+            remaining--;
+            if (rageTimerEl) rageTimerEl.textContent = Math.max(0, remaining);
+            if (remaining <= 0) {
+                clearInterval(rageCountdownTimer);
+            }
+        }, 1000);
+    }
+
+    function hideRageWarning() {
+        clearInterval(rageCountdownTimer);
+        if (rageAlertEl) rageAlertEl.classList.add('hidden');
+    }
 
     // Tự động resize Canvas khớp khung nhìn
     function resizeCanvas() {
@@ -332,9 +357,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleServerEvent(event) {
         const type = event.type;
         const data = event.data || {};
-        const isDelayedHit = (type === 'action' && data.effect === 'lightning');
+        const isDelayedHit = (type === 'action' && (data.effect === 'lightning' || data.effect === 'bomb_blast'));
 
-        // Nếu là chiêu có độ trễ (sét giáng từ trời), chỉ cập nhật thông tin chung, CHƯA trừ máu thanh HP
+        // Nếu là chiêu có độ trễ (sét giáng từ trời hoặc bộc phá bay tới), chỉ cập nhật thông tin chung, CHƯA trừ máu thanh HP
         if (data.game_snapshot) {
             updateGameState(data.game_snapshot, !isDelayedHit);
         }
@@ -351,7 +376,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const isGift = (data.action_type === 'gift') || (effect.startsWith('gift_'));
 
             // 1. KHI NGƯỜI DÙNG TẶNG QUÀ VIP:
-            // TÔN VINH VÀ RA ĐÒN NGAY LẬP TỨC - KHÔNG ZOOM VÀO NHÂN VẬT, KHÔNG LÀM GIÁN ĐOẠN KHUNG NHÌN
             if (isGift) {
                 showVipBanner(avatar, nickname, skill, damage);
                 playerRenderer.triggerAttack(nickname, avatar, skill, effect);
@@ -368,37 +392,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (effect === 'gift_galaxy' || effect === 'ultimate_dragon') sound.playBlackHoleGalaxy();
                 else sound.playGiftLaser();
 
-                // Chiêu thức PixelFX tung thẳng sang Boss tức thì
-                effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
-                applyDamageHit(data);
+                // Chiêu thức PixelFX tung thẳng sang Boss
+                if (effect === 'gift_galaxy' || effect === 'ultimate_dragon') {
+                    effects.addSkill(effect, bossX, bossY, {
+                        originX: playerX,
+                        originY: playerY,
+                        groundY: groundY,
+                        onMultiHit: (tickDmg) => {
+                            bossRenderer.triggerHurt();
+                        }
+                    });
+                    applyDamageHit(data);
+                } else {
+                    effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
+                    applyDamageHit(data);
+                }
             } 
-            // 2. KHI BÌNH LUẬN (chem, lua, bang, set, bom, heal, doc) HOẶC LIKE:
+            // 2. KHI BÌNH LUẬN (chem, lua, bang, set, bom, doc) HOẶC LIKE:
             else {
                 // Hiển thị diễn hoạt nhân vật & phát âm thanh xuất chiêu
                 if (effect === 'sword_slash') {
                     playerRenderer.triggerAttack(nickname, avatar, skill, effect);
                     sound.playSlash();
                 } else if (effect === 'fireball') {
+                    // Chat "lua": Arcane Missiles ma thuật
                     playerRenderer.triggerCast(nickname, avatar, skill, effect);
                     sound.playFireball();
                 } else if (effect === 'lightning') {
                     // Dũng sĩ niệm chú pháp trận, sấm sét tích tụ năng lượng, CHƯA đánh xuống
                     playerRenderer.triggerCast(nickname, avatar, skill, effect);
                 } else if (effect === 'bomb_blast') {
+                    // Chat "bom": Quả cầu lửa bay tới Boss rồi mới nổ
                     playerRenderer.triggerAttack(nickname, avatar, skill, effect);
-                    sound.playBomb();
+                    sound.playFireball();
                 } else if (effect === 'ice_shard') {
+                    // Chat "bang": Ice Spikes + Snowflake Burst
                     playerRenderer.triggerCast(nickname, avatar, skill, effect);
                     sound.playIce();
                 } else if (effect === 'heart_barrage' || effect === 'magic_bullet') {
                     playerRenderer.triggerCast(nickname, avatar, skill, effect);
                     sound.playHeartHit();
-                } else if (effect === 'holy_heal') {
-                    // Chat "heal" - Dũng Sĩ niệm chú ánh sáng hồi máu
-                    playerRenderer.triggerCast(nickname, avatar, skill, effect);
-                    sound.playVictory();
                 } else if (effect === 'poison_sting') {
-                    // Chat "doc" - Dũng Sĩ tung chưởng độc tố
+                    // Chat "doc": Acid Splash ăn mòn
                     playerRenderer.triggerCast(nickname, avatar, skill, effect);
                     sound.playSlash();
                 } else {
@@ -419,28 +454,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                 } 
-                // 2.2. ĐỐI VỚI CHIÊU HỒI MÁU ("heal"):
-                // CỘT SÁNG THẦN THÁNH XUẤT HIỆN TRÊN NGƯỜI DŨNG SĨ & HỒI MÁU CHO DŨNG SĨ
-                else if (effect === 'holy_heal') {
-                    effects.addSkill('holy_heal', playerX, playerY, {
+                // 2.2. ĐỐI VỚI CHIÊU BỘC PHÁ ("bom"):
+                // QUẢ CẦU LỬA BAY TỚI BOSS RỒI MỚI NỔ BỘC PHÁ & TRỪ MÁU
+                else if (effect === 'bomb_blast') {
+                    effects.addSkill('bomb_blast', bossX, bossY, {
                         originX: playerX,
+                        originY: playerY,
                         groundY: groundY,
                         onHit: () => {
-                            playerRenderer.triggerHeal();
-                            const healVal = data.healed_player || 180;
-                            effects.addDamageNumber(playerX, playerY - 45, healVal, false, "+");
-                            if (data.player) {
-                                playerRenderer.setPlayerData(data.player);
-                            }
+                            sound.playBomb();
+                            applyDamageHit(data);
                         }
                     });
-                    // Đồng thời gây sát thương thánh quang nhẹ lên boss
-                    if (data.damage > 0) {
-                        applyDamageHit(data);
-                    }
                 }
                 // 2.3. ĐỐI VỚI CHIÊU ĐỘC TỐ ("doc"):
-                // NỔ ĐỘC TỐ XANH LỤC BẢO TRÊN BOSS & BẮT ĐẦU RÚT MÁU ĐỘC
+                // NỔ AXIT LỤC BẢO TRÊN BOSS & BẮT ĐẦU RÚT MÁU ĐỘC (15 HP/S TRONG 5S)
                 else if (effect === 'poison_sting') {
                     effects.addSkill('poison_sting', bossX, bossY, {
                         originX: playerX,
@@ -454,7 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
                 else {
-                    // Các chiêu đánh giáp lá cà hoặc bay nhanh: trừ máu ngay
+                    // Các chiêu đánh giáp lá cà hoặc chưởng ma pháp: trừ máu ngay
                     effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
                     applyDamageHit(data);
                 }
@@ -526,11 +554,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 bossRenderer.setBossData(data.boss);
             }
 
-        } else if (type === 'player_revived') {
-            // DŨNG SĨ HỒI SINH THÀNH CÔNG VỚI CỘT SÁNG THẦN THÁNH
+        } else if (type === 'boss_rage_warning') {
+            // CẢNH BÁO 5S TRƯỚC KHI BOSS PHÓNG ĐÒN NỘ TỬ THẦN
+            showRageWarning(data.duration || 5.0);
+            sound.playBomb();
+            effects.triggerScreenShake(18, 25);
+            addCombatFeed(bossRenderer.bossData.name || 'BOSS', '⚠️ TÍCH NỘ 5S! (CHAT "hộ giá" ĐỂ BẬT KHIÊN)', 0, '');
+
+        } else if (type === 'shield_activated') {
+            // NGƯỜI CHƠI CHAT "hộ giá" KÍCH HOẠT KHIÊN TIME-STOP
             sound.playVictory();
-            effects.triggerScreenShake(15, 22);
-            effects.spawnPixelFX('heal', playerX, groundY, 3.2, { duration: 2.2 });
+            effects.triggerScreenShake(8, 14);
+            effects.addSkill('player_shield', playerX, playerY, { groundY: groundY });
+            addCombatFeed(data.nickname || 'Hiệp sĩ', '🛡️ KÍCH HOẠT HỘ GIÁ (KHIÊN THỜI GIAN)', 0, '');
+
+        } else if (type === 'boss_rage_execute') {
+            // THI HÀNH ĐÒN NỘ CỦA BOSS
+            hideRageWarning();
+            if (data.shielded) {
+                // ĐÃ BẬT KHIÊN: KHÔNG NHẬN SÁT THƯƠNG
+                sound.playVictory();
+                effects.triggerScreenShake(12, 18);
+                addCombatFeed(data.shield_by || 'Hiệp sĩ', '🛡️ HỘ GIÁ THÀNH CÔNG! CHẶN HOÀN TOÀN ĐÒN NỘ!', 0, '');
+            } else {
+                // CHƯA BẬT KHIÊN: NỘ TỬ THẦN ĐÁNH THẲNG VÀO NGƯỜI CHƠI (CHẾT NGAY LẬP TỨC)
+                sound.playBomb();
+                effects.triggerScreenShake(28, 40);
+                effects.addSkill('boss_rage', playerX, playerY, { groundY: groundY });
+                playerRenderer.triggerHurt();
+                effects.addDamageNumber(playerX, playerY - 45, 999999, true, "-💀 ");
+                addCombatFeed(bossRenderer.bossData.name || 'BOSS', '⚡ NỘ DIỆT THẾ! DŨNG SĨ GỤC NGÃ!', 999999, '');
+            }
+            if (data.player) {
+                playerRenderer.setPlayerData(data.player);
+            }
+
+        } else if (type === 'player_revived') {
+            // DŨNG SĨ HỒI SINH THÀNH CÔNG VỚI HIỆU ỨNG SCIFI/WARP-IN
+            sound.playVictory();
+            effects.triggerScreenShake(18, 26);
+            effects.spawnPixelFX('scifi/warp-in', playerX, groundY, 2.6, { duration: 3.0 });
             playerRenderer.triggerHeal();
             if (data.player) {
                 playerRenderer.setPlayerData(data.player);

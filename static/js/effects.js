@@ -41,12 +41,25 @@ class PixelFXInstance {
         this.maxDuration = customOptions.duration || (this.meta.loop ? Math.min(this.meta.duration || 2.5, 3.0) : (this.meta.duration || 2.2));
         this.elapsed = 0;
         this.hasStopped = false;
+
+        // Tùy chọn tăng dần kích thước theo thời gian (growScale)
+        this.growScale = customOptions.growScale || false;
+        this.startScale = customOptions.startScale || scale;
+        this.targetScale = customOptions.targetScale || scale;
+        this.growDuration = customOptions.growDuration || (this.maxDuration * 0.7);
     }
 
     update(dt = 0.016) {
         if (this.isDead) return false;
         this.elapsed += dt;
         this.acc += dt;
+
+        // Tăng dần kích cỡ mượt mà nếu growScale = true
+        if (this.growScale) {
+            const p = Math.min(1.0, this.elapsed / this.growDuration);
+            const easeOut = 1 - Math.pow(1 - p, 3);
+            this.scale = this.startScale + (this.targetScale - this.startScale) * easeOut;
+        }
 
         // Trước khi kết thúc 0.4s -> Gọi stop() để PixelFX mờ dần tự nhiên
         if (this.elapsed >= (this.maxDuration - 0.4) && !this.hasStopped) {
@@ -151,10 +164,11 @@ class VisualSkillEffect {
             case 'sword_slash': return 40;
             case 'fireball': return 60;
             case 'lightning': return 85;
-            case 'ice_shard': return 60;
-            case 'bomb_blast': return 60;
+            case 'ice_shard': return 70;
+            case 'bomb_blast': return 70;
             case 'poison_sting': return 75;
-            case 'holy_heal': return 70;
+            case 'player_shield': return 90;
+            case 'boss_rage': return 90;
             case 'boss_fireball': return 60;
             case 'boss_lightning': return 85;
             case 'boss_frost': return 65;
@@ -165,7 +179,7 @@ class VisualSkillEffect {
             case 'blade_storm': return 110;
             case 'gift_heart': return 90;
             case 'gift_donut':
-            case 'meteor_shower': return 120;
+            case 'meteor_shower': return 130;
             case 'gift_rocket': return 140;
             case 'gift_crown': return 130;
             case 'gift_corgi': return 100;
@@ -192,14 +206,17 @@ class VisualSkillEffect {
             }
         }
 
-        // 2. Cầu Lửa (Fireball bay tới + Big Explosion nổ nứt mặt đất)
+        // 2. Cầu Lửa (dùng arcane/arcane-missiles cho skill Cầu lửa)
         else if (this.type === 'fireball') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(7, 10);
-                effectsManager.spawnPixelFX('fireball', originX + 50, groundY - 45, 2.0, { duration: 0.45 });
-            } else if (this.frame === 12) {
+                effectsManager.spawnPixelFX('arcane/arcane-missiles', originX + 20, groundY - 45, 2.2, { duration: 1.8 });
+            } else if (this.frame === 24) {
                 effectsManager.triggerScreenShake(10, 14);
-                effectsManager.spawnPixelFX('bigExplosion', this.targetX, groundY, 2.2, { duration: 1.8 });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, groundY - 45, 1.8, { duration: 0.8 });
+                if (typeof this.options.onHit === 'function') {
+                    this.options.onHit(this);
+                }
             }
         }
 
@@ -210,31 +227,39 @@ class VisualSkillEffect {
                 effectsManager.spawnPixelFX('lightningStrike', this.targetX, groundY, 2.3, { duration: 2.2 });
             } else if (this.frame === 48) {
                 // ĐÚNG KHOẢNH KHẮC TIA SÉT KHỔNG LỒ GIÁNG XUỐNG MẶT ĐẤT (t = 0.76s):
-                // 1. Rung chấn màn hình mạnh mẽ
                 effectsManager.triggerScreenShake(15, 20);
-                // 2. Nổ tia lửa chí mạng trên ngực boss
                 effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 45, 1.8, { duration: 0.8 });
-                // 3. Kích hoạt hiệu ứng trừ máu boss, hiện số sát thương và âm thanh sấm sét
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
             }
         }
 
-        // 4. Băng Thiên Tiễn (Frost Nova nở rộ từ mặt đất + Ice Crystal)
+        // 4. Băng (dùng ice/ice-spikes kết hợp ice/snowflake-burst cho skill Băng)
         else if (this.type === 'ice_shard') {
             if (this.frame === 1) {
-                effectsManager.triggerScreenShake(5, 10);
-                effectsManager.spawnPixelFX('frostNova', this.targetX, groundY, 2.1, { duration: 1.8 });
-                effectsManager.spawnPixelFX('iceCrystal', this.targetX, groundY - 20, 2.2, { duration: 1.6 });
+                effectsManager.triggerScreenShake(7, 12);
+                effectsManager.spawnPixelFX('ice/ice-spikes', originX + 40, groundY, 2.2, { duration: 2.2 });
+                effectsManager.spawnPixelFX('ice/snowflake-burst', this.targetX, groundY - 30, 2.3, { duration: 2.0 });
+                if (typeof this.options.onHit === 'function') {
+                    this.options.onHit(this);
+                }
             }
         }
 
-        // 5. Bộc Phá Ma Thuật (Barrel Explosion nổ tung trên mặt sàn)
+        // 5. Bộc Phá Ma Thuật (Dùng fire/fireball kết hợp explosions/small-explosion, khi quả cầu lửa chạm tới Boss thì mới nổ)
         else if (this.type === 'bomb_blast') {
             if (this.frame === 1) {
-                effectsManager.triggerScreenShake(10, 14);
-                effectsManager.spawnPixelFX('barrelExplosion', this.targetX, groundY, 2.3, { duration: 1.8 });
+                effectsManager.triggerScreenShake(6, 8);
+                // Quả cầu lửa phóng từ phía người chơi bay tới Boss
+                effectsManager.spawnPixelFX('fire/fireball', originX + 40, groundY - 45, 2.2, { duration: 0.45 });
+            } else if (this.frame === 14) {
+                // ĐÚNG KHOẢNH KHẮC CẦU LỬA CHẠM TỚI BOSS: Nổ tung small-explosion!
+                effectsManager.triggerScreenShake(14, 18);
+                effectsManager.spawnPixelFX('explosions/small-explosion', this.targetX, groundY, 2.4, { duration: 2.0 });
+                if (typeof this.options.onHit === 'function') {
+                    this.options.onHit(this);
+                }
             }
         }
 
@@ -246,29 +271,11 @@ class VisualSkillEffect {
             }
         }
 
-        // 7. Thánh Quang Hồi Máu (Chat "heal" / "hoi mau" - Cột sáng phục hồi Dũng Sĩ)
-        else if (this.type === 'holy_heal') {
-            if (this.frame === 1) {
-                effectsManager.triggerScreenShake(4, 8);
-                effectsManager.spawnPixelFX('heal', this.targetX, groundY, 2.6, { duration: 1.8 });
-                if (typeof this.options.onHit === 'function') {
-                    this.options.onHit(this);
-                }
-            }
-        }
-
-        // 8. Kịch Độc Ma Thuật (Chat "doc" / "độc" - Vụ nổ độc tố xanh lục bảo bùng cháy trên Boss)
+        // 7. Kịch Độc Ma Thuật (Dùng nature/acid-splash cho skill Trúng độc giữ nguyên hiệu ứng trúng độc, 5s 15 HP/s)
         else if (this.type === 'poison_sting') {
             if (this.frame === 1) {
-                effectsManager.triggerScreenShake(6, 12);
-                effectsManager.spawnPixelFX('frostNova', this.targetX, groundY, 2.3, {
-                    duration: 1.8,
-                    palette: ["#021a05","#083d0e","#0e6b18","#1ca828","#32d640","#6eff78","#c2ffc7","#ffffff"]
-                });
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 45, 1.8, {
-                    duration: 0.8,
-                    palette: ["#021a05","#083d0e","#0e6b18","#1ca828","#32d640","#6eff78","#c2ffc7","#ffffff"]
-                });
+                effectsManager.triggerScreenShake(8, 12);
+                effectsManager.spawnPixelFX('nature/acid-splash', this.targetX, groundY, 2.4, { duration: 2.6 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -276,7 +283,7 @@ class VisualSkillEffect {
         }
 
         // --- BOSS TẤN CÔNG NGƯỢC LẠI DŨNG SĨ ---
-        // 9. Boss Cầu Lửa Hắc Ám
+        // 8. Boss Cầu Lửa Hắc Ám
         else if (this.type === 'boss_fireball') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(8, 12);
@@ -290,7 +297,7 @@ class VisualSkillEffect {
             }
         }
 
-        // 10. Boss Thiên Lôi Hắc Ám
+        // 9. Boss Thiên Lôi Hắc Ám
         else if (this.type === 'boss_lightning') {
             if (this.frame === 1) {
                 effectsManager.spawnPixelFX('lightningStrike', this.targetX, groundY, 2.2, {
@@ -306,7 +313,7 @@ class VisualSkillEffect {
             }
         }
 
-        // 11. Boss Hàn Băng Thấu Xương
+        // 10. Boss Hàn Băng Thấu Xương
         else if (this.type === 'boss_frost') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(8, 14);
@@ -318,7 +325,7 @@ class VisualSkillEffect {
             }
         }
 
-        // 12. Boss Địa Chấn Diệt Tuyệt
+        // 11. Boss Địa Chấn Diệt Tuyệt
         else if (this.type === 'boss_slam') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(18, 24);
@@ -329,37 +336,86 @@ class VisualSkillEffect {
             }
         }
 
-        // 🌹 Quà 1: Hoa Hồng - Vạn Kiếm Quy Tông (Bão kiếm trảm liên hoàn Heavy Cleave + Double Slash + Critical Hit)
-        else if (this.type === 'gift_rose' || this.type === 'blade_storm') {
+        // --- BOSS NỘ VÀ KHIÊN HỘ GIÁ ---
+        // Nộ của boss: Dùng explosions/implosion và explosions/plasma-explosion, tác động lên người chơi
+        else if (this.type === 'boss_rage') {
             if (this.frame === 1) {
-                effectsManager.triggerScreenShake(12, 16);
-                effectsManager.spawnPixelFX('heavyCleave', this.targetX, groundY, 2.7, { duration: 1.6 });
-                effectsManager.spawnPixelFX('doubleSlash', this.targetX - 25, groundY - 25, 2.4, { duration: 1.2 });
-            } else if (this.frame === 10) {
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 45, 2.0, { duration: 0.8 });
+                effectsManager.triggerScreenShake(18, 24);
+                // Implosion hút sụp mọi vật chất tại vị trí người chơi
+                effectsManager.spawnPixelFX('explosions/implosion', this.targetX, groundY - 25, 2.8, { duration: 1.65 });
             } else if (this.frame === 20) {
-                effectsManager.spawnPixelFX('dashStrike', this.targetX, groundY, 2.2, { duration: 1.5 });
+                // Plasma explosion bùng nổ năng lượng cực đại tiêu diệt người chơi
+                effectsManager.triggerScreenShake(26, 32);
+                effectsManager.spawnPixelFX('explosions/plasma-explosion', this.targetX, groundY - 25, 3.2, { duration: 2.0 });
+                if (typeof this.options.onHit === 'function') {
+                    this.options.onHit(this);
+                }
             }
         }
 
-        // 💖 Quà 2: Trái Tim (Mũi Tên Thần Cupid - Charmed Bão Tố Đa Tầng)
-        else if (this.type === 'gift_heart') {
+        // Khiên Hộ Giá: arcane/time-stop bảo vệ người chơi không nhận sát thương
+        else if (this.type === 'player_shield') {
             if (this.frame === 1) {
-                effectsManager.triggerScreenShake(9, 14);
-                effectsManager.spawnPixelFX('charmed', this.targetX, groundY - 35, 3.2, { duration: 2.0 });
-            } else if (this.frame === 12) {
-                effectsManager.spawnPixelFX('charmed', this.targetX + 20, groundY - 50, 2.6, { duration: 1.6 });
+                effectsManager.triggerScreenShake(8, 12);
+                effectsManager.spawnPixelFX('arcane/time-stop', this.targetX, groundY, 2.8, { duration: 4.5 });
             }
         }
 
-        // 🍩 Quà 3: Donut (Meteor giáng từ bầu trời đập nát mặt sàn + Big Explosion nổ tung)
-        else if (this.type === 'gift_donut' || this.type === 'meteor_shower') {
+        // 🌹 Quà 1: Hoa Hồng - Vạn Kiếm Quy Tông (holy/holy-pillar kết hợp arcane/star-fall palette holy)
+        else if (this.type === 'gift_rose' || this.type === 'blade_storm') {
+            const holyPal = (window.PixelFX && window.PixelFX.PAL && window.PixelFX.PAL.holy) ? window.PixelFX.PAL.holy : ["#2a1c08","#5a3e10","#9a6c18","#d8a428","#ffd84a","#fff09a","#fffbe6","#ffffff"];
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(14, 20);
-                effectsManager.spawnPixelFX('meteor', this.targetX, groundY, 2.6, { duration: 2.2 });
-            } else if (this.frame === 16) {
-                effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('bigExplosion', this.targetX, groundY, 2.4, { duration: 1.8 });
+                effectsManager.spawnPixelFX('holy/holy-pillar', this.targetX, groundY, 2.5, { duration: 2.8, palette: holyPal });
+                effectsManager.spawnPixelFX('arcane/star-fall', this.targetX, groundY, 2.4, { duration: 2.4, palette: holyPal });
+            } else if (this.frame === 14) {
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, groundY - 45, 2.0, { duration: 0.8, palette: holyPal });
+            }
+        }
+
+        // 💖 Quà 2: Trái Tim (shadow/shadow-tendrils palette blood cho Skill mũi tên cupid)
+        else if (this.type === 'gift_heart') {
+            const bloodPal = (window.PixelFX && window.PixelFX.PAL && window.PixelFX.PAL.blood) ? window.PixelFX.PAL.blood : ["#14040a","#3a0a14","#6a101c","#a01824","#d42a30","#ff5a50","#ff9a8a"];
+            if (this.frame === 1) {
+                effectsManager.triggerScreenShake(11, 16);
+                effectsManager.spawnPixelFX('shadow/shadow-tendrils', this.targetX, groundY, 2.8, { duration: 2.2, palette: bloodPal });
+            } else if (this.frame === 12) {
+                effectsManager.spawnPixelFX('shadow/shadow-tendrils', this.targetX - 25, groundY, 2.4, { duration: 1.8, palette: bloodPal });
+                effectsManager.spawnPixelFX('shadow/shadow-tendrils', this.targetX + 25, groundY, 2.4, { duration: 1.8, palette: bloodPal, flip: true });
+            }
+        }
+
+        // 🍩 Quà 3: Donut (Bão thiên thạch: nhiều thiên thạch từ nhiều hướng, chạm đất mới nổ)
+        else if (this.type === 'gift_donut' || this.type === 'meteor_shower') {
+            // Thiên thạch 1: Từ góc trên trái rơi xuống mép trái
+            if (this.frame === 1) {
+                effectsManager.spawnPixelFX('fire/meteor', this.targetX - 45, groundY, 2.5, { duration: 2.2, flip: false, seed: 1 });
+            }
+            // Thiên thạch 2: Từ góc trên phải rơi xuống mép phải
+            else if (this.frame === 10) {
+                effectsManager.spawnPixelFX('fire/meteor', this.targetX + 50, groundY, 2.5, { duration: 2.2, flip: true, seed: 5 });
+            }
+            // Thiên thạch 3: Từ góc trên trái rơi xuống chính giữa
+            else if (this.frame === 22) {
+                effectsManager.spawnPixelFX('fire/meteor', this.targetX, groundY, 2.6, { duration: 2.2, flip: false, seed: 9 });
+            }
+            // Thiên thạch 4: Từ góc trên phải rơi xuống
+            else if (this.frame === 32) {
+                effectsManager.spawnPixelFX('fire/meteor', this.targetX + 15, groundY, 2.5, { duration: 2.2, flip: true, seed: 12 });
+            }
+            // NỔ ĐÚNG KHOẢNH KHẮC MỖI THIÊN THẠCH CHẠM ĐẤT (t = 0.62s ~ 18-19 frame sau khi xuất hiện):
+            else if (this.frame === 19) {
+                effectsManager.triggerScreenShake(16, 20);
+                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX - 45, groundY, 2.4, { duration: 1.8 });
+            } else if (this.frame === 28) {
+                effectsManager.triggerScreenShake(16, 20);
+                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX + 50, groundY, 2.4, { duration: 1.8 });
+            } else if (this.frame === 40) {
+                effectsManager.triggerScreenShake(18, 24);
+                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX, groundY, 2.6, { duration: 1.8 });
+            } else if (this.frame === 50) {
+                effectsManager.triggerScreenShake(18, 24);
+                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX + 15, groundY, 2.5, { duration: 1.8 });
             }
         }
 
@@ -383,24 +439,25 @@ class VisualSkillEffect {
             }
         }
 
-        // 🐺 Quà 6: Corgi / Bầy Sói (Dash Strike lướt thần tốc dọc mặt sàn + Critical Hit cào xé)
+        // 🐺 Quà 6: Corgi - Huyết Ma Bạo Tạc (shadow/dark-explosion palette blood)
         else if (this.type === 'gift_corgi') {
+            const bloodPal = (window.PixelFX && window.PixelFX.PAL && window.PixelFX.PAL.blood) ? window.PixelFX.PAL.blood : ["#14040a","#3a0a14","#6a101c","#a01824","#d42a30","#ff5a50","#ff9a8a"];
             if (this.frame === 1) {
-                effectsManager.triggerScreenShake(11, 15);
-                effectsManager.spawnPixelFX('dashStrike', originX, groundY, 2.5, { duration: 1.8 });
+                effectsManager.triggerScreenShake(14, 20);
+                effectsManager.spawnPixelFX('shadow/dark-explosion', this.targetX, groundY, 2.8, { duration: 2.2, palette: bloodPal });
             } else if (this.frame === 12) {
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 40, 2.0, { duration: 0.8 });
+                effectsManager.spawnPixelFX('shadow/dark-explosion', this.targetX - 30, groundY, 2.2, { duration: 1.8, palette: bloodPal });
+                effectsManager.spawnPixelFX('shadow/dark-explosion', this.targetX + 30, groundY, 2.2, { duration: 1.8, palette: bloodPal });
             }
         }
 
-        // 🏎️ Quà 7: Siêu Xe (Dash Strike + Fire Tornado càn quét sàn đấu + Critical Hit va chạm)
+        // 🏎️ Quà 7: Siêu Xe - Quỷ Vực Huyết Thủ (shadow/grasping-hands kết hợp shadow/void-orb palette blood)
         else if (this.type === 'gift_car') {
+            const bloodPal = (window.PixelFX && window.PixelFX.PAL && window.PixelFX.PAL.blood) ? window.PixelFX.PAL.blood : ["#14040a","#3a0a14","#6a101c","#a01824","#d42a30","#ff5a50","#ff9a8a"];
             if (this.frame === 1) {
-                effectsManager.triggerScreenShake(14, 18);
-                effectsManager.spawnPixelFX('dashStrike', originX, groundY, 2.5, { duration: 1.8 });
-                effectsManager.spawnPixelFX('fireTornado', this.targetX, groundY, 2.4, { duration: 2.0 });
-            } else if (this.frame === 14) {
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 45, 2.1, { duration: 0.9 });
+                effectsManager.triggerScreenShake(16, 22);
+                effectsManager.spawnPixelFX('shadow/grasping-hands', this.targetX, groundY, 2.8, { duration: 2.6, palette: bloodPal });
+                effectsManager.spawnPixelFX('shadow/void-orb', this.targetX, groundY, 2.6, { duration: 2.6, palette: bloodPal });
             }
         }
 
@@ -414,15 +471,27 @@ class VisualSkillEffect {
             }
         }
 
-        // 🌌 Quà 9: Galaxy (Hố đen hút mọi vật trên sàn + Arcane Beam cực quang + Critical Hit nổ tung)
+        // 🌌 Quà 9: Galaxy (Bỏ arcane beam, dời hố đen vào giữa rồng thần và từ từ tăng kích thước, rút máu 5 lần mỗi lần 500000)
         else if (this.type === 'gift_galaxy' || this.type === 'ultimate_dragon') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('blackHole', this.targetX, groundY, 2.8, { duration: 2.8 });
-            } else if (this.frame === 24) {
-                effectsManager.spawnPixelFX('arcaneBeam', originX + 40, groundY - 25, 2.6, { duration: 2.0 });
-            } else if (this.frame === 40) {
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 45, 2.4, { duration: 1.0 });
+                // Dời hố đen vào chính giữa rồng thần/boss (targetX, targetY) và từ từ tăng kích thước khi xuất hiện
+                effectsManager.spawnPixelFX('shadow/black-hole', this.targetX, this.targetY, 1.0, {
+                    duration: 4.5,
+                    growScale: true,
+                    startScale: 0.8,
+                    targetScale: 3.5,
+                    growDuration: 3.0
+                });
+            }
+            // RÚT MÁU 5 LẦN MỖI LẦN 500,000 HP:
+            else if (this.frame === 20 || this.frame === 42 || this.frame === 64 || this.frame === 86 || this.frame === 108) {
+                effectsManager.triggerScreenShake(12, 16);
+                effectsManager.addDamageNumber(this.targetX + (Math.random() - 0.5) * 40, this.targetY - 50, 500000, true);
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX + (Math.random() - 0.5) * 30, this.targetY + (Math.random() - 0.5) * 30, 1.8, { duration: 0.7 });
+                if (typeof this.options.onMultiHit === 'function') {
+                    this.options.onMultiHit(500000);
+                }
             }
         }
 

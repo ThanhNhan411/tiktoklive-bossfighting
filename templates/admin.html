@@ -156,13 +156,13 @@
                 <div class="sim-section">
                     <div class="sim-section-title">💬 BÌNH LUẬN RA CHIÊU (COMMENTS)</div>
                     <div class="btn-grid">
-                        <button class="btn-sim" data-sim-type="comment" data-text="chem">🗡️ Chat "chem" (Kiếm)</button>
-                        <button class="btn-sim" data-sim-type="comment" data-text="lua">🔥 Chat "lua" (Cầu Lửa)</button>
-                        <button class="btn-sim" data-sim-type="comment" data-text="bang">❄️ Chat "bang" (Băng)</button>
-                        <button class="btn-sim" data-sim-type="comment" data-text="set">⚡ Chat "set" (Sét)</button>
-                        <button class="btn-sim" data-sim-type="comment" data-text="bom">💣 Chat "bom" (Bộc Phá)</button>
-                        <button class="btn-sim" data-sim-type="comment" data-text="heal">✨ Chat "heal" (Hồi Máu)</button>
-                        <button class="btn-sim" data-sim-type="comment" data-text="doc">🧪 Chat "doc" (Trúng Độc)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="chem">🗡️ Chat "chem" (200 DMG)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="lua">🔥 Chat "lua" (200 DMG)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="bang">❄️ Chat "bang" (200 DMG)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="set">⚡ Chat "set" (200 DMG)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="bom">💣 Chat "bom" (200 DMG)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="doc">🧪 Chat "doc" (200 + 15/s)</button>
+                        <button class="btn-sim" data-sim-type="comment" data-text="hộ giá" style="border-color: #00e5ff; color: #00e5ff; font-weight: 700;">🛡️ Chat "hộ giá" (Bật Khiên)</button>
                     </div>
 
                     <div style="display: flex; gap: 8px; margin-top: 10px;">
@@ -178,7 +178,7 @@
                         <button id="btnSimBossAttack" class="btn btn-warning">⚔️ Boss Đánh Dũng Sĩ (-150 HP)</button>
                         <button id="btnSimPlayerKill" class="btn btn-danger">💀 Hạ Gục Dũng Sĩ (Máu = 0)</button>
                         <button id="btnSimAddHearts" class="btn btn-sim" style="border-color: #e91e63; color: #ff4081;">💖 Thả 10 Tim Hồi Sinh</button>
-                        <button id="btnSimPlayerRevive" class="btn btn-success">✝️ Hồi Sinh Tức Thì</button>
+                        <button id="btnSimPlayerRevive" class="btn btn-success">✝️ Hồi Sinh Tức Thì (Warp-In)</button>
                         <button id="btnSimBossPoison" class="btn btn-sim" style="border-color: #00e676; color: #00e676;">🧪 Đầu Độc Boss</button>
                     </div>
                 </div>
@@ -191,10 +191,10 @@
                             🌹 Hoa Hồng (1 xu)<br><small>Vạn Kiếm Quy Tông</small>
                         </button>
                         <button class="btn-sim" data-sim-type="gift" data-gift-name="Trái Tim" data-diamonds="10" data-count="1">
-                            💖 Trái Tim (10 xu)<br><small>Mũi Tên Cupid</small>
+                            💖 Trái Tim (10 xu)<br><small>Mũi Tên Cupid (Huyết)</small>
                         </button>
                         <button class="btn-sim" data-sim-type="gift" data-gift-name="Donut" data-diamonds="30" data-count="1">
-                            🍩 Donut (30 xu)<br><small>Bão Thiên Thạch</small>
+                            🍩 Donut (30 xu)<br><small>Bão Thiên Thạch Đa Hướng</small>
                         </button>
                         <button class="btn-sim" data-sim-type="gift" data-gift-name="Tên Lửa" data-diamonds="100" data-count="1" style="border-color: #ff5252;">
                             🚀 Tên Lửa (100 xu)<br><small>Nổ Nấm Nguyên Tử</small>
@@ -203,16 +203,16 @@
                             👑 Vương Miện (199 xu)<br><small>Thánh Kiếm Excalibur</small>
                         </button>
                         <button class="btn-sim" data-sim-type="gift" data-gift-name="Corgi" data-diamonds="299" data-count="1" style="border-color: #00e5ff;">
-                            🐶 Corgi (299 xu)<br><small>Bầy Sói Thần</small>
+                            🐶 Corgi (299 xu)<br><small>Huyết Ma Bạo Tạc</small>
                         </button>
                         <button class="btn-sim" data-sim-type="gift" data-gift-name="Siêu Xe" data-diamonds="500" data-count="1" style="border-color: #ff3d00;">
-                            🏎️ Siêu Xe (500 xu)<br><small>Chiến Mã Nitro</small>
+                            🏎️ Siêu Xe (500 xu)<br><small>Quỷ Vực Huyết Thủ</small>
                         </button>
                         <button class="btn-sim" data-sim-type="gift" data-gift-name="Sư Tử" data-diamonds="1000" data-count="1" style="border-color: #ff9100; color: #ff9100;">
                             🦁 Sư Tử (1000 xu)<br><small>Sư Tử Lửa Thần Thánh</small>
                         </button>
                         <button class="btn-sim" data-sim-type="gift" data-gift-name="Galaxy" data-diamonds="1000" data-count="1" style="border-color: #ffd700; color: #ffd700; font-weight: 900;">
-                            🌌 GALAXY (1000 xu)<br><small>Hố Đen & Rồng Thần</small>
+                            🌌 GALAXY (1000 xu)<br><small>Hố Đen Rồng Thần (-2.5M)</small>
                         </button>
                     </div>
                 </div>

@@ -19,7 +19,7 @@ class Boss:
         self.killer = None
         self.is_poisoned = False
         self.poison_end_time = 0
-        self.poison_dmg_per_tick = 80
+        self.poison_dmg_per_tick = 15
         self.last_poison_tick = 0
 
     def take_damage(self, amount, user_name="Người bí ẩn"):
@@ -43,8 +43,8 @@ class Boss:
         self.current_hp += actual_heal
         return actual_heal
 
-    def apply_poison(self, duration=7, damage_per_tick=80):
-        """Đầu độc Boss: rút máu liên tục theo thời gian."""
+    def apply_poison(self, duration=5, damage_per_tick=15):
+        """Đầu độc Boss: rút máu liên tục theo thời gian (5 giây, mỗi giây 15 máu)."""
         if self.is_dead:
             return False
         now = time.time()
@@ -185,6 +185,52 @@ class GameState:
         self.idle_heal_delay = 5.0
         self.heal_percent_per_sec = 0.006
         self.last_interaction_time = time.time()
+
+        # Boss Nộ & Cảnh Báo 5 Giây & Khiên Hộ Giá (arcane/time-stop)
+        self.rage_warning_active = False
+        self.rage_warning_end_time = 0
+        self.player_shielded = False
+        self.player_shield_by = ""
+
+    def start_rage_warning(self, duration=5.0):
+        """Bắt đầu cảnh báo 5 giây trước khi Boss xả Nộ Hủy Diệt."""
+        with self.lock:
+            if self.boss.is_dead or self.player.is_dead:
+                return False
+            self.rage_warning_active = True
+            self.rage_warning_end_time = time.time() + duration
+            self.player_shielded = False
+            self.player_shield_by = ""
+            return True
+
+    def activate_shield(self, nickname="Dũng Sĩ"):
+        """Người xem comment 'hộ giá' kích hoạt Khiên Time-Stop bảo vệ người chơi."""
+        with self.lock:
+            self.player_shielded = True
+            self.player_shield_by = nickname
+            return True
+
+    def execute_boss_rage(self):
+        """Kích hoạt Nộ Boss: tác động lên người chơi, nộ làm người chơi chết ngay lập tức nếu không có khiên."""
+        with self.lock:
+            self.rage_warning_active = False
+            self.boss.reset_rage()
+            if self.player.is_dead or self.boss.is_dead:
+                return False, False, 0, ""
+
+            shielded = self.player_shielded
+            shield_by = self.player_shield_by
+
+            if shielded:
+                # Có khiên Hộ Giá -> Người chơi an toàn, không nhận sát thương!
+                actual_dmg = 0
+            else:
+                # Không có khiên -> Người chơi chết ngay lập tức!
+                actual_dmg = self.player.take_damage(self.player.current_hp if self.player.current_hp > 0 else 999999)
+
+            self.player_shielded = False
+            self.player_shield_by = ""
+            return True, shielded, actual_dmg, shield_by
 
     def set_player_config(self, max_hp=None, revive_hearts=None, auto_attack=None, attack_interval=None):
         with self.lock:
@@ -353,15 +399,22 @@ class GameState:
             if nickname:
                 self.leaderboard[user_id]["nickname"] = nickname
 
+            trigger_rage = False
+            if self.boss.rage >= 100 and not self.rage_warning_active and not self.boss.is_dead and not self.player.is_dead:
+                self.start_rage_warning(duration=5.0)
+                trigger_rage = True
+
             event_data = {
                 "user_id": user_id,
                 "nickname": nickname,
                 "avatar": avatar,
                 "skill": skill_name,
                 "damage": actual_damage,
+                "raw_damage": raw_damage,
                 "is_crit": is_crit,
                 "action_type": action_type,
                 "boss_dead": self.boss.is_dead,
+                "trigger_rage_warning": trigger_rage,
                 "timestamp": time.time()
             }
             self.recent_events.append(event_data)
@@ -384,6 +437,7 @@ class GameState:
             buff_remaining = max(0, int(self.buff_end_time - time.time()))
             idle_seconds = max(0, int(time.time() - self.last_interaction_time))
             is_regenerating = self.auto_heal_enabled and not self.boss.is_dead and idle_seconds >= self.idle_heal_delay
+            rage_warning_remaining = max(0, int(self.rage_warning_end_time - time.time())) if self.rage_warning_active else 0
             return {
                 "boss": self.boss.to_dict(),
                 "player": self.player.to_dict(),
@@ -399,5 +453,9 @@ class GameState:
                 "hp_growth_rate": self.hp_growth_rate,
                 "base_start_hp": self.base_start_hp,
                 "boss_auto_attack_enabled": self.boss_auto_attack_enabled,
-                "boss_attack_interval": self.boss_attack_interval
+                "boss_attack_interval": self.boss_attack_interval,
+                "rage_warning_active": self.rage_warning_active,
+                "rage_warning_remaining": rage_warning_remaining,
+                "player_shielded": self.player_shielded,
+                "player_shield_by": self.player_shield_by
             }
