@@ -6,6 +6,9 @@ const MAX_ACTIVE_PIXELFX = 10;    // Giới hạn hiệu ứng PixelFX cùng lú
 
 // BẢNG MÀU BLOOD (HUYẾT SẮC) ĐỒNG BỘ 100% CHO TẤT CẢ SKILL ĐÁNH BOSS
 
+// Palette lửa (đỏ -> cam -> vàng -> trắng) cho Cầu Lửa
+const FIRE_PALETTE = ["#4a1712", "#c9281f", "#f2561d", "#ff8a2a", "#ffc23d", "#ffe26b", "#fff3a6", "#ffffff"];
+
 // LỚP DIỄN HOẠT HIỆU ỨNG TỪ THƯ VIỆN PIXELFX
 class PixelFXInstance {
     constructor(effectMod, x, y, scale = 2.8, customOptions = {}) {
@@ -231,30 +234,25 @@ class VisualSkillEffect {
             }
         }
 
-        // 2. Cầu Lửa: 3 quả cầu lửa (PixelFX 'fireball', palette lửa gốc) bay từ người chơi tới giữa thân Boss, không nổ
+        // 2. Cầu Lửa: arcane/arcane-missiles phủ palette lửa, bay từ người chơi tới giữa thân Boss, không nổ
         else if (this.type === 'fireball') {
             const launchY = (this.options.originY || groundY) - 50;   // tầm tay/ngực người chơi
-            const launches = [1, 7, 13];
             const flight = 0.36;                                      // giây bay tới boss
-            const arriveFrames = launches.map(f => f + Math.round(flight / 0.016));
-            const idx = launches.indexOf(this.frame);
-            if (idx !== -1) {
-                if (idx === 0) effectsManager.triggerScreenShake(5, 8);
-                effectsManager.spawnPixelFX('fire/fireball', originX + 40, launchY, 1.8, {
-                    duration: flight + 0.02,
+            if (this.frame === 1) {
+                effectsManager.triggerScreenShake(5, 8);
+                effectsManager.spawnPixelFX('arcane/arcane-missiles', originX + 30, launchY, 2.3, {
+                    duration: 1.2,
+                    palette: FIRE_PALETTE,
                     move: true,
-                    startX: originX + 40,
+                    startX: originX + 30,
                     startY: launchY,
                     targetX: this.targetX,
                     targetY: this.targetY,
                     moveDuration: flight
                 });
-            }
-            const hitIdx = arriveFrames.indexOf(this.frame);
-            if (hitIdx !== -1) {
-                // Không vụ nổ: cầu lửa chạm tâm thân Boss rồi tan, chỉ rung nhẹ
-                effectsManager.triggerScreenShake(hitIdx === arriveFrames.length - 1 ? 8 : 4, 6);
-                if (hitIdx === 0 && typeof this.options.onHit === 'function') {
+            } else if (this.frame === 1 + Math.round(flight / 0.016)) {
+                effectsManager.triggerScreenShake(8, 8);
+                if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
             }
