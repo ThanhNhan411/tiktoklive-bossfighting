@@ -116,7 +116,11 @@ def _rage_tick():
 
 def _boss_attack_tick():
     """Boss tự động phản công Dũng Sĩ theo chu kỳ cấu hình."""
-    if not (game_state.boss_auto_attack_enabled and not game_state.boss.is_dead and not game_state.player.is_dead):
+    if game_state.boss.is_dead or game_state.player.is_dead:
+        # Dũng Sĩ gục / Boss chết: dừng đồng hồ, sau hồi sinh / boss mới đếm lại từ đầu (không bị đánh ngay)
+        game_state.last_boss_attack_time = time.time()
+        return
+    if not game_state.boss_auto_attack_enabled:
         return
     if time.time() - game_state.last_boss_attack_time < game_state.boss_attack_interval:
         return

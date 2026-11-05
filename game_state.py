@@ -265,6 +265,8 @@ class GameState:
                 self.boss_auto_attack_enabled = bool(auto_attack)
             if attack_interval is not None:
                 self.boss_attack_interval = max(3.0, float(attack_interval))
+            if auto_attack is not None or attack_interval is not None:
+                self.last_boss_attack_time = time.time()  # áp dụng cấu hình mới: đếm lại từ lúc lưu
             return self.player.to_dict()
 
     def boss_attack_player(self, skill_index=None):

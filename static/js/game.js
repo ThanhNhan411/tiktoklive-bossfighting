@@ -92,6 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const victoryBossNameEl = document.getElementById('victoryBossName');
     const victoryKillerEl = document.getElementById('victoryKiller');
 
+    // Actor rỗng cho hiệu ứng có hình người (warp-in): 1 pixel đặt ngoài khung hình nên không hiện nhân vật
+    const HIDDEN_ACTOR = {
+        mask: { w: 1, h: 1, data: new Uint8Array([1]) }, pixels: new Uint32Array(1),
+        x: -5000, y: -5000, w: 1, h: 1, k: 2, head: [0, -1], chest: [0, -1]
+    };
+
     // Quản lý cảnh báo đòn nộ 5 giây của Boss
     let rageCountdownTimer = null;
     function showRageWarning(durationSeconds = 5.0) {
@@ -653,7 +659,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // DŨNG SĨ HỒI SINH THÀNH CÔNG VỚI HIỆU ỨNG SCIFI/WARP-IN
             sound.playVictory();
             effects.triggerScreenShake(18, 26);
-            effects.spawnPixelFX('scifi/warp-in', playerX, groundY, 2.6, { duration: 3.0 });
+            // Hồi sinh chỉ có tia sáng warp-in, không vẽ bóng nhân vật bên trong (actor ẩn ngoài khung hình)
+            effects.spawnPixelFX('scifi/warp-in', playerX, groundY, 2.6, { duration: 3.0, actor: HIDDEN_ACTOR });
             playerRenderer.triggerHeal();
             if (data.player) {
                 playerRenderer.setPlayerData(data.player);
