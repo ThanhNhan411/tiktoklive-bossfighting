@@ -492,7 +492,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         originY: playerY,
                         groundY: groundY,
                         onHit: () => {
-                            applyDamageHit(data);
+                            // Độc không trừ máu tức thì (không hiện số, không chớp đỏ): chỉ bật hiệu ứng nhiễm độc,
+                            // máu sẽ rút dần từng giây qua sự kiện boss_poison_tick
+                            if (data.game_snapshot) updateGameState(data.game_snapshot, true);
                             if (data.game_snapshot && data.game_snapshot.boss) {
                                 bossRenderer.setBossData(data.game_snapshot.boss);
                             }

@@ -322,17 +322,18 @@ class VisualSkillEffect {
         else if (this.type === 'bomb_blast') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(6, 8);
-                // Quả cầu lửa phóng từ tầm ngực dũng sĩ bay thẳng vào CHÍNH GIỮA TÂM NGỰC BOSS (targetY)
-                effectsManager.spawnPixelFX('fire/fireball', originX + 35, this.targetY, 2.3, {
+                // Quả cầu lửa rời tay dũng sĩ rồi bay chếch lên tới tâm ngực Boss
+                const handY = (this.options.originY || groundY) - 38;
+                effectsManager.spawnPixelFX('fire/fireball', originX + 35, handY, 2.3, {
                     duration: 0.45,
                     move: true,
                     startX: originX + 35,
-                    startY: this.targetY,
+                    startY: handY,
                     targetX: this.targetX,
                     targetY: this.targetY,
                     moveDuration: 0.42
                 });
-            } else if (this.frame === 14) {
+            } else if (this.frame === 27) {
                 // ĐÚNG KHOẢNH KHẮC QUẢ CẦU LỬA CHẠM CHUẨN XÁC VÀO TÂM NGỰC BOSS: Nổ bộc phá dữ dội!
                 effectsManager.triggerScreenShake(14, 18);
                 effectsManager.spawnPixelFX('explosions/small-explosion', this.targetX, groundY, 2.6, { duration: 2.0 });

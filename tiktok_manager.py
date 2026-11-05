@@ -282,7 +282,7 @@ class TikTokManager:
         elif any(w in text_lower for w in ["doc", "độc", "poison", "toxic", "venom"]):
             skill_name = "Kịch Độc Ma Thuật"
             effect_type = "poison_sting"
-            raw_dmg = 200
+            raw_dmg = 0  # Độc không trừ máu thẳng: chỉ rút từ từ 15 máu/giây trong 5 giây
             is_poison = True
         else:
             # Comment thường thành đạn chữ bay vào boss (cân bằng 200 DMG)
