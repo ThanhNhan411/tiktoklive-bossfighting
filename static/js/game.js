@@ -106,6 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (rageTimerEl) rageTimerEl.textContent = Math.max(0, remaining);
             if (remaining <= 0) {
                 clearInterval(rageCountdownTimer);
+                // Dự phòng: nếu server không gửi sự kiện nộ, tự ẩn bảng sau 2.5s
+                setTimeout(hideRageWarning, 2500);
             }
         }, 1000);
     }
@@ -612,6 +614,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (type === 'boss_rage_execute') {
             // THI HÀNH ĐÒN NỘ CỦA BOSS
             hideRageWarning();
+            if (data.cancelled) {
+                if (data.player) playerRenderer.setPlayerData(data.player);
+                return;
+            }
             if (data.shielded) {
                 // ĐÃ BẬT KHIÊN: KHÔNG NHẬN SÁT THƯƠNG
                 sound.playVictory();

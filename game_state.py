@@ -21,6 +21,9 @@ class Boss:
         self.poison_end_time = 0
         self.poison_dmg_per_tick = 15
         self.last_poison_tick = 0
+        self.poison_start_time = 0
+        self.poison_ticks_done = 0
+        self.poison_ticks_left = 0
 
     def take_damage(self, amount, user_name="Người bí ẩn"):
         if self.is_dead:
@@ -52,31 +55,29 @@ class Boss:
         self.poison_end_time = now + duration
         self.poison_dmg_per_tick = damage_per_tick
         self.last_poison_tick = now
+        self.poison_start_time = now
+        self.poison_ticks_done = 0
         self.poison_ticks_left = int(duration)
         return True
 
     def check_poison_tick(self):
-        """Kiểm tra và trừ máu độc mỗi 1 giây (5 giây, mỗi giây 15 máu)."""
+        """Trừ máu độc đúng nhịp mỗi 1 giây: tổng 5 tick x 15 máu (không trôi nhịp)."""
         if not self.is_poisoned or self.is_dead:
             return 0, False, False
         now = time.time()
-        # Đã hết thời gian 5 giây hoặc hết số tick
-        if now > self.poison_end_time or getattr(self, 'poison_ticks_left', 0) <= 0:
+        total_ticks = int(round(self.poison_end_time - self.poison_start_time))
+        due = min(total_ticks, int((now - self.poison_start_time) // 1.0))
+        dmg = 0
+        while self.poison_ticks_done < due and not self.is_dead:
+            self.poison_ticks_done += 1
+            dmg += self.take_damage(self.poison_dmg_per_tick, "Kịch Độc")
+        finished = self.poison_ticks_done >= total_ticks or self.is_dead
+        if finished:
             self.is_poisoned = False
             self.poison_ticks_left = 0
-            return 0, False, True
-
-        if now - self.last_poison_tick >= 1.0:
-            self.last_poison_tick = now
-            self.poison_ticks_left = getattr(self, 'poison_ticks_left', 5) - 1
-            dmg = self.take_damage(self.poison_dmg_per_tick, "Kịch Độc")
-            is_still = (self.poison_ticks_left > 0) and (now < self.poison_end_time)
-            if not is_still:
-                self.is_poisoned = False
-                self.poison_ticks_left = 0
-            return dmg, self.is_poisoned, not is_still
-
-        return 0, True, False
+            return dmg, False, True
+        self.poison_ticks_left = total_ticks - self.poison_ticks_done
+        return dmg, True, False
 
     def reset_rage(self):
         self.rage = 0
@@ -362,7 +363,7 @@ class GameState:
 
     def check_idle_heal(self):
         with self.lock:
-            if not self.auto_heal_enabled or self.boss.is_dead:
+            if not self.auto_heal_enabled or self.boss.is_dead or self.boss.is_poisoned:
                 return 0, False
             now = time.time()
             idle_seconds = now - self.last_interaction_time

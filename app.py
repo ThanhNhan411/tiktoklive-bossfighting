@@ -95,6 +95,15 @@ def _boss_combat_worker():
             if game_state.rage_warning_active:
                 if time.time() >= game_state.rage_warning_end_time:
                     success, shielded, actual_dmg, shield_by = game_state.execute_boss_rage()
+                    if not success:
+                        # Dũng Sĩ/Boss đã chết trong lúc đếm ngược: báo client tắt bảng đếm ngược
+                        broadcast_event("boss_rage_execute", {
+                            "boss_name": game_state.boss.name,
+                            "cancelled": True,
+                            "shielded": False,
+                            "player": game_state.player.to_dict(),
+                            "boss": game_state.boss.to_dict()
+                        })
                     if success:
                         if shielded:
                             broadcast_event("boss_rage_execute", {
@@ -132,7 +141,7 @@ def _boss_combat_worker():
                             "boss": game_state.boss.to_dict()
                         })
         except Exception:
-            pass
+            import traceback; traceback.print_exc()
 
 heal_thread = threading.Thread(target=_idle_heal_worker, daemon=True)
 heal_thread.start()
