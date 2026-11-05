@@ -5,7 +5,6 @@ const MAX_DAMAGE_NUMBERS = 25;    // Giới hạn số sát thương tối đa
 const MAX_ACTIVE_PIXELFX = 10;    // Giới hạn hiệu ứng PixelFX cùng lúc
 
 // BẢNG MÀU BLOOD (HUYẾT SẮC) ĐỒNG BỘ 100% CHO TẤT CẢ SKILL ĐÁNH BOSS
-const BLOOD_PALETTE = ["#14040a", "#3a0a14", "#6a101c", "#a01824", "#d42a30", "#ff5a50", "#ff9a8a"];
 
 // LỚP DIỄN HOẠT HIỆU ỨNG TỪ THƯ VIỆN PIXELFX
 class PixelFXInstance {
@@ -223,9 +222,9 @@ class VisualSkillEffect {
         if (this.type === 'sword_slash') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(6, 10);
-                effectsManager.spawnPixelFX('doubleSlash', this.targetX, groundY, 2.3, { duration: 1.0, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('doubleSlash', this.targetX, groundY, 2.3, { duration: 1.0 });
             } else if (this.frame === 4) {
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, this.targetY, 1.8, { duration: 0.8, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('criticalHit', this.targetX, this.targetY, 1.8, { duration: 0.8 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -239,7 +238,6 @@ class VisualSkillEffect {
                 // Đạn ma thuật lửa phóng từ người chơi bay thẳng vào tâm Boss
                 effectsManager.spawnPixelFX('arcane/arcane-missiles', originX + 30, this.targetY, 2.3, {
                     duration: 1.2,
-                    palette: BLOOD_PALETTE,
                     move: true,
                     startX: originX + 30,
                     startY: this.targetY,
@@ -250,7 +248,7 @@ class VisualSkillEffect {
             } else if (this.frame === 12) {
                 // ĐÚNG THỜI ĐIỂM CHẠM VÀO TÂM BOSS: Bùng nổ sát thương huyết sắc!
                 effectsManager.triggerScreenShake(10, 14);
-                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.2, { duration: 0.8, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.2, { duration: 0.8 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -261,11 +259,11 @@ class VisualSkillEffect {
         else if (this.type === 'lightning') {
             if (this.frame === 1) {
                 // Triệu hồi pháp trận sấm sét huyết sắc tích tụ năng lượng dưới chân boss
-                effectsManager.spawnPixelFX('lightningStrike', this.targetX, groundY, 2.3, { duration: 2.2, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('lightningStrike', this.targetX, groundY, 2.3, { duration: 2.2 });
             } else if (this.frame === 48) {
                 // ĐÚNG KHOẢNH KHẮC TIA SÉT HUYẾT LÔI GIÁNG XUỐNG TÂM BOSS:
                 effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, this.targetY, 2.2, { duration: 0.8, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('criticalHit', this.targetX, this.targetY, 2.2, { duration: 0.8 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -276,8 +274,8 @@ class VisualSkillEffect {
         else if (this.type === 'ice_shard') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(7, 12);
-                effectsManager.spawnPixelFX('ice/ice-spikes', this.targetX, groundY, 2.3, { duration: 2.2, palette: BLOOD_PALETTE });
-                effectsManager.spawnPixelFX('ice/snowflake-burst', this.targetX, this.targetY, 2.4, { duration: 2.0, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('ice/ice-spikes', this.targetX, groundY, 2.3, { duration: 2.2 });
+                effectsManager.spawnPixelFX('ice/snowflake-burst', this.targetX, groundY, 2.4, { duration: 2.0 });
             } else if (this.frame === 10) {
                 // ĐÚNG THỜI ĐIỂM GAI BĂNG HUYẾT SẮC TRỒI LÊN ĐÂM TRÚNG BOSS:
                 if (typeof this.options.onHit === 'function') {
@@ -293,7 +291,6 @@ class VisualSkillEffect {
                 // Quả cầu lửa phóng từ tầm ngực dũng sĩ bay thẳng vào CHÍNH GIỮA TÂM NGỰC BOSS (targetY)
                 effectsManager.spawnPixelFX('fire/fireball', originX + 35, this.targetY, 2.3, {
                     duration: 0.45,
-                    palette: BLOOD_PALETTE,
                     move: true,
                     startX: originX + 35,
                     startY: this.targetY,
@@ -304,7 +301,7 @@ class VisualSkillEffect {
             } else if (this.frame === 14) {
                 // ĐÚNG KHOẢNH KHẮC QUẢ CẦU LỬA CHẠM CHUẨN XÁC VÀO TÂM NGỰC BOSS: Nổ bộc phá dữ dội!
                 effectsManager.triggerScreenShake(14, 18);
-                effectsManager.spawnPixelFX('explosions/small-explosion', this.targetX, this.targetY, 2.6, { duration: 2.0, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('explosions/small-explosion', this.targetX, groundY, 2.6, { duration: 2.0 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -315,7 +312,7 @@ class VisualSkillEffect {
         else if (this.type === 'heart_barrage' || this.type === 'magic_bullet') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(3, 6);
-                effectsManager.spawnPixelFX('charmed', this.targetX, this.targetY, 2.2, { duration: 1.4, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('charmed', this.targetX, this.targetY, 2.2, { duration: 1.4 });
             } else if (this.frame === 8) {
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
@@ -327,7 +324,7 @@ class VisualSkillEffect {
         else if (this.type === 'poison_sting') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(8, 12);
-                effectsManager.spawnPixelFX('nature/acid-splash', this.targetX, this.targetY, 2.5, { duration: 2.6, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('nature/acid-splash', this.targetX, groundY, 2.5, { duration: 2.6 });
             } else if (this.frame === 8) {
                 // ĐÚNG THỜI ĐIỂM AXIT TRÚNG ĐÍCH TÂM BOSS: Trừ máu và bắt đầu rút độc
                 if (typeof this.options.onHit === 'function') {
@@ -355,12 +352,11 @@ class VisualSkillEffect {
         else if (this.type === 'boss_lightning') {
             if (this.frame === 1) {
                 effectsManager.spawnPixelFX('lightningStrike', this.targetX, groundY, 2.2, {
-                    duration: 2.2,
-                    palette: ["#1a0628","#350e50","#5c1888","#8b28c8","#b848ff","#da88ff","#f3d0ff","#ffffff"]
+                    duration: 2.2
                 });
             } else if (this.frame === 48) {
                 effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 40, 1.8, { duration: 0.8 });
+                effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 25, 1.8, { duration: 0.8 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -372,7 +368,7 @@ class VisualSkillEffect {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(8, 14);
                 effectsManager.spawnPixelFX('frostNova', this.targetX, groundY, 2.2, { duration: 1.8 });
-                effectsManager.spawnPixelFX('iceCrystal', this.targetX, groundY - 20, 2.2, { duration: 1.6 });
+                effectsManager.spawnPixelFX('iceCrystal', this.targetX, groundY, 2.2, { duration: 1.6 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -417,11 +413,11 @@ class VisualSkillEffect {
         else if (this.type === 'gift_rose' || this.type === 'blade_storm') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(14, 20);
-                effectsManager.spawnPixelFX('holy/holy-pillar', this.targetX, groundY, 2.5, { duration: 2.8, palette: BLOOD_PALETTE });
-                effectsManager.spawnPixelFX('arcane/star-fall', this.targetX, groundY, 2.4, { duration: 2.4, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('holy/holy-pillar', this.targetX, groundY, 2.5, { duration: 2.8 });
+                effectsManager.spawnPixelFX('arcane/star-fall', this.targetX, groundY, 2.4, { duration: 2.4 });
             } else if (this.frame === 16) {
                 // ĐÚNG THỜI ĐIỂM VẠN KIẾM HUYẾT THẦN ĐÂM XUỐNG TÂM BOSS:
-                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.2, { duration: 0.8, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.2, { duration: 0.8 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -432,10 +428,10 @@ class VisualSkillEffect {
         else if (this.type === 'gift_heart') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(11, 16);
-                effectsManager.spawnPixelFX('shadow/shadow-tendrils', this.targetX, groundY, 2.8, { duration: 2.2, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('shadow/shadow-tendrils', this.targetX, groundY, 2.8, { duration: 2.2 });
             } else if (this.frame === 12) {
-                effectsManager.spawnPixelFX('shadow/shadow-tendrils', this.targetX - 25, groundY, 2.4, { duration: 1.8, palette: BLOOD_PALETTE });
-                effectsManager.spawnPixelFX('shadow/shadow-tendrils', this.targetX + 25, groundY, 2.4, { duration: 1.8, palette: BLOOD_PALETTE, flip: true });
+                effectsManager.spawnPixelFX('shadow/shadow-tendrils', this.targetX - 25, groundY, 2.4, { duration: 1.8 });
+                effectsManager.spawnPixelFX('shadow/shadow-tendrils', this.targetX + 25, groundY, 2.4, { duration: 1.8, flip: true });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -446,36 +442,36 @@ class VisualSkillEffect {
         else if (this.type === 'gift_donut' || this.type === 'meteor_shower') {
             // Thiên thạch 1: Từ góc trên trái rơi xuống mép trái
             if (this.frame === 1) {
-                effectsManager.spawnPixelFX('fire/meteor', this.targetX - 45, groundY, 2.5, { duration: 2.2, flip: false, seed: 1, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('fire/meteor', this.targetX - 45, groundY, 2.5, { duration: 2.2, flip: false, seed: 1 });
             }
             // Thiên thạch 2: Từ góc trên phải rơi xuống mép phải
             else if (this.frame === 10) {
-                effectsManager.spawnPixelFX('fire/meteor', this.targetX + 50, groundY, 2.5, { duration: 2.2, flip: true, seed: 5, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('fire/meteor', this.targetX + 50, groundY, 2.5, { duration: 2.2, flip: true, seed: 5 });
             }
             // NỔ ĐÚNG KHOẢNH KHẮC THIÊN THẠCH 1 CHẠM ĐẤT: Trừ máu và rung chuyển sàn đấu!
             else if (this.frame === 19) {
                 effectsManager.triggerScreenShake(16, 20);
-                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX - 45, groundY, 2.4, { duration: 1.8, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX - 45, groundY, 2.4, { duration: 1.8 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
             }
             // Thiên thạch 3: Từ góc trên trái rơi xuống chính giữa
             else if (this.frame === 22) {
-                effectsManager.spawnPixelFX('fire/meteor', this.targetX, groundY, 2.6, { duration: 2.2, flip: false, seed: 9, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('fire/meteor', this.targetX, groundY, 2.6, { duration: 2.2, flip: false, seed: 9 });
             } else if (this.frame === 28) {
                 effectsManager.triggerScreenShake(16, 20);
-                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX + 50, groundY, 2.4, { duration: 1.8, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX + 50, groundY, 2.4, { duration: 1.8 });
             }
             // Thiên thạch 4: Từ góc trên phải rơi xuống
             else if (this.frame === 32) {
-                effectsManager.spawnPixelFX('fire/meteor', this.targetX + 15, groundY, 2.5, { duration: 2.2, flip: true, seed: 12, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('fire/meteor', this.targetX + 15, groundY, 2.5, { duration: 2.2, flip: true, seed: 12 });
             } else if (this.frame === 40) {
                 effectsManager.triggerScreenShake(18, 24);
-                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX, groundY, 2.6, { duration: 1.8, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX, groundY, 2.6, { duration: 1.8 });
             } else if (this.frame === 50) {
                 effectsManager.triggerScreenShake(18, 24);
-                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX + 15, groundY, 2.5, { duration: 1.8, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('explosions/big-explosion', this.targetX + 15, groundY, 2.5, { duration: 1.8 });
             }
         }
 
@@ -483,10 +479,10 @@ class VisualSkillEffect {
         else if (this.type === 'gift_rocket') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(18, 24);
-                effectsManager.spawnPixelFX('nuke', this.targetX, groundY, 2.8, { duration: 2.6, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('nuke', this.targetX, groundY, 2.8, { duration: 2.6 });
             } else if (this.frame === 18) {
                 // ĐÚNG THỜI ĐIỂM NẤM NGUYÊN TỬ PHÁT NỔ TỐI ĐẠI:
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, this.targetY, 2.2, { duration: 0.9, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('criticalHit', this.targetX, this.targetY, 2.2, { duration: 0.9 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -497,10 +493,10 @@ class VisualSkillEffect {
         else if (this.type === 'gift_crown') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('smite', this.targetX, groundY, 2.8, { duration: 2.3, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('smite', this.targetX, groundY, 2.8, { duration: 2.3 });
             } else if (this.frame === 16) {
                 // ĐÚNG THỜI ĐIỂM THÁNH KIẾM CẮM PHẬP XUỐNG SÀN:
-                effectsManager.spawnPixelFX('heavyCleave', this.targetX, this.targetY, 2.4, { duration: 1.5, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('heavyCleave', this.targetX, this.targetY, 2.4, { duration: 1.5 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -511,10 +507,10 @@ class VisualSkillEffect {
         else if (this.type === 'gift_corgi') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(14, 20);
-                effectsManager.spawnPixelFX('shadow/dark-explosion', this.targetX, this.targetY, 2.8, { duration: 2.2, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('shadow/dark-explosion', this.targetX, groundY, 2.8, { duration: 2.2 });
             } else if (this.frame === 12) {
-                effectsManager.spawnPixelFX('shadow/dark-explosion', this.targetX - 30, this.targetY, 2.2, { duration: 1.8, palette: BLOOD_PALETTE });
-                effectsManager.spawnPixelFX('shadow/dark-explosion', this.targetX + 30, this.targetY, 2.2, { duration: 1.8, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('shadow/dark-explosion', this.targetX - 30, groundY, 2.2, { duration: 1.8 });
+                effectsManager.spawnPixelFX('shadow/dark-explosion', this.targetX + 30, groundY, 2.2, { duration: 1.8 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -525,8 +521,8 @@ class VisualSkillEffect {
         else if (this.type === 'gift_car') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('shadow/grasping-hands', this.targetX, groundY, 2.8, { duration: 2.6, palette: BLOOD_PALETTE });
-                effectsManager.spawnPixelFX('shadow/void-orb', this.targetX, this.targetY, 2.6, { duration: 2.6, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('shadow/grasping-hands', this.targetX, groundY, 2.8, { duration: 2.6 });
+                effectsManager.spawnPixelFX('shadow/void-orb', this.targetX, groundY - 30, 2.6, { duration: 2.6 });
             } else if (this.frame === 14) {
                 // ĐÚNG THỜI ĐIỂM QUỶ THỦ BÓP NÁT TÂM BOSS:
                 if (typeof this.options.onHit === 'function') {
@@ -539,9 +535,9 @@ class VisualSkillEffect {
         else if (this.type === 'gift_lion') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('fireTornado', this.targetX, groundY, 2.8, { duration: 2.3, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('fireTornado', this.targetX, groundY, 2.8, { duration: 2.3 });
             } else if (this.frame === 15) {
-                effectsManager.spawnPixelFX('heavyCleave', this.targetX, this.targetY, 2.4, { duration: 1.6, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('heavyCleave', this.targetX, this.targetY, 2.4, { duration: 1.6 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -555,7 +551,6 @@ class VisualSkillEffect {
                 // Dời hố đen vào chính giữa tâm ngực boss (targetX, targetY) với Palette Blood
                 effectsManager.spawnPixelFX('shadow/black-hole', this.targetX, this.targetY, 1.0, {
                     duration: 4.5,
-                    palette: BLOOD_PALETTE,
                     growScale: true,
                     startScale: 0.8,
                     targetScale: 3.5,
@@ -565,14 +560,14 @@ class VisualSkillEffect {
             // RÚT MÁU 5 LẦN MỖI LẦN 500,000 HP TẠI CÁC NHỊP XOÁY HỐ ĐEN:
             else if (this.frame === 20 || this.frame === 42 || this.frame === 64 || this.frame === 86) {
                 effectsManager.triggerScreenShake(12, 16);
-                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX + (Math.random() - 0.5) * 30, this.targetY + (Math.random() - 0.5) * 30, 2.0, { duration: 0.7, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX + (Math.random() - 0.5) * 30, this.targetY + (Math.random() - 0.5) * 30, 2.0, { duration: 0.7 });
                 if (typeof this.options.onMultiHit === 'function') {
                     this.options.onMultiHit(Math.floor(this.frame / 22) + 1, 500000);
                 }
             } else if (this.frame === 108) {
                 // Nhịp thứ 5 kết thúc chuỗi rút máu 2.500.000 HP:
                 effectsManager.triggerScreenShake(18, 24);
-                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.6, { duration: 0.8, palette: BLOOD_PALETTE });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.6, { duration: 0.8 });
                 if (typeof this.options.onMultiHit === 'function') {
                     this.options.onMultiHit(5, 500000);
                 }
