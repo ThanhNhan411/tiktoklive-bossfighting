@@ -146,6 +146,9 @@ class BossRenderer {
         if (!data) return;
         const wasDead = this.bossData.is_dead;
         this.bossData = Object.assign({}, this.bossData, data);
+        if (!this.bossData.is_poisoned) {
+            if (this.poisonBubbles) this.poisonBubbles = [];
+        }
         if (data.boss_type && data.boss_type !== this.currentAuraType) {
             this.currentAuraType = data.boss_type;
             this.auraFx = new BossAuraFX(this.currentAuraType);
@@ -172,6 +175,13 @@ class BossRenderer {
         }
         if (this.healGlow > 0) {
             this.healGlow -= 0.05;
+        }
+        // Tự động tắt trạng thái độc khi hết thời gian (5 giây)
+        if (this.bossData.is_poisoned && this.bossData.poison_end_time) {
+            if (Date.now() / 1000 >= this.bossData.poison_end_time) {
+                this.bossData.is_poisoned = false;
+                if (this.poisonBubbles) this.poisonBubbles = [];
+            }
         }
         if (this.bossData.is_dead && this.deathProgress > 0) {
             this.deathProgress -= 0.005; // Tan biến chậm rãi trong ~3.3s cùng hiệu ứng chiêu

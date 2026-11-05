@@ -49,31 +49,41 @@ class Boss:
             return False
         now = time.time()
         self.is_poisoned = True
-        self.poison_end_time = max(self.poison_end_time, now + duration)
+        self.poison_end_time = now + duration
         self.poison_dmg_per_tick = damage_per_tick
         self.last_poison_tick = now
+        self.poison_ticks_left = int(duration)
         return True
 
     def check_poison_tick(self):
-        """Kiểm tra và trừ máu độc mỗi 1 giây."""
+        """Kiểm tra và trừ máu độc mỗi 1 giây (5 giây, mỗi giây 15 máu)."""
         if not self.is_poisoned or self.is_dead:
-            return 0
+            return 0, False, False
         now = time.time()
-        if now > self.poison_end_time:
+        # Đã hết thời gian 5 giây hoặc hết số tick
+        if now > self.poison_end_time or getattr(self, 'poison_ticks_left', 0) <= 0:
             self.is_poisoned = False
-            return 0
+            self.poison_ticks_left = 0
+            return 0, False, True
+
         if now - self.last_poison_tick >= 1.0:
             self.last_poison_tick = now
+            self.poison_ticks_left = getattr(self, 'poison_ticks_left', 5) - 1
             dmg = self.take_damage(self.poison_dmg_per_tick, "Kịch Độc")
-            return dmg
-        return 0
+            is_still = (self.poison_ticks_left > 0) and (now < self.poison_end_time)
+            if not is_still:
+                self.is_poisoned = False
+                self.poison_ticks_left = 0
+            return dmg, self.is_poisoned, not is_still
+
+        return 0, True, False
 
     def reset_rage(self):
         self.rage = 0
 
     def to_dict(self):
         now = time.time()
-        is_pos = self.is_poisoned and (now < self.poison_end_time)
+        is_pos = self.is_poisoned and (now < self.poison_end_time) and (getattr(self, 'poison_ticks_left', 0) > 0)
         return {
             "id": self.boss_id,
             "name": self.name,
@@ -85,7 +95,8 @@ class Boss:
             "is_dead": self.is_dead,
             "killer": self.killer,
             "is_poisoned": is_pos,
-            "poison_remaining": max(0, int(self.poison_end_time - now)) if is_pos else 0
+            "poison_remaining": max(0, int(self.poison_end_time - now)) if is_pos else 0,
+            "poison_end_time": self.poison_end_time if is_pos else 0
         }
 
 class Player:

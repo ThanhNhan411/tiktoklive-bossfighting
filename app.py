@@ -71,16 +71,24 @@ def _idle_heal_worker():
 def _boss_combat_worker():
     """Vòng lặp kiểm tra Boss phản công Dũng Sĩ & Rút máu độc mỗi giây."""
     while True:
-        time.sleep(1.0)
+        time.sleep(0.25)
         try:
-            # 1. Rút máu khi Boss bị trúng độc
-            poison_dmg = game_state.boss.check_poison_tick()
+            # 1. Rút máu khi Boss bị trúng độc (5 giây, mỗi giây 15 HP)
+            poison_dmg, is_poisoned, ended = game_state.boss.check_poison_tick()
             if poison_dmg > 0:
                 broadcast_event("boss_poison_tick", {
                     "damage": poison_dmg,
                     "boss_name": game_state.boss.name,
                     "message": f"🧪 {game_state.boss.name} bị trúng độc rút máu (-{poison_dmg} HP)!",
-                    "boss": game_state.boss.to_dict()
+                    "boss": game_state.boss.to_dict(),
+                    "game_snapshot": game_state.get_snapshot()
+                })
+            if ended:
+                broadcast_event("boss_poison_end", {
+                    "boss_name": game_state.boss.name,
+                    "message": f"✨ {game_state.boss.name} đã hóa giải độc tố!",
+                    "boss": game_state.boss.to_dict(),
+                    "game_snapshot": game_state.get_snapshot()
                 })
 
             # 2. Kiểm tra cảnh báo Nộ Boss (5 giây)

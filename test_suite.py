@@ -89,6 +89,25 @@ def test():
     assert game_state.boss.poison_dmg_per_tick == 15
     print(f"✅ Hiệu ứng trúng độc: Đang kích hoạt ({game_state.boss.poison_dmg_per_tick} HP/s trong 5s)!")
 
+    # Test rút máu từng tick độc và kết thúc sau 5 tick
+    total_poison_ticks = 0
+    total_poison_dmg = 0
+    while True:
+        game_state.boss.last_poison_tick = 0  # Ép thời gian tick
+        dmg, is_poisoned, ended = game_state.boss.check_poison_tick()
+        if dmg > 0:
+            total_poison_ticks += 1
+            total_poison_dmg += dmg
+        if ended:
+            break
+        if total_poison_ticks > 10:
+            break
+
+    assert total_poison_ticks == 5, f"Poison must tick exactly 5 times, got {total_poison_ticks}"
+    assert total_poison_dmg == 75, f"Poison must deal 15*5=75 damage, got {total_poison_dmg}"
+    assert game_state.boss.is_poisoned == False, "Boss must not be poisoned after poison ended!"
+    print(f"✅ Độc tố rút máu chuẩn xác 5 lần ({total_poison_dmg} HP) và tự động tắt sau 5 giây!")
+
     # 4. Test Đòn Nộ Của Boss & Khiên Hộ Giá (Time-Stop)
     print("\n--- TEST ĐÒN NỘ CỦA BOSS & KHIÊN HỘ GIÁ (TIME-STOP) ---")
     game_state.player.revive()

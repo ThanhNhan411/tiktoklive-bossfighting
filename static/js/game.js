@@ -133,8 +133,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const playerY = groundY;
         // Boss đứng bên PHẢI
         const bossX = isPortrait ? canvas.width * 0.77 : canvas.width * 0.78;
-        // Tâm ngực quái vật cho các chiêu thức bay tới (ngang thân boss)
-        const bossY = isPortrait ? groundY - 100 : groundY - 120;
+        // Tâm ngực quái vật cho các chiêu thức bay tới (ngang thân boss, tâm giữa ngực quái vật)
+        const bossY = isPortrait ? groundY - 135 : groundY - 160;
 
         return { isPortrait, groundY, playerX, playerY, bossX, bossY };
     }
@@ -357,9 +357,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleServerEvent(event) {
         const type = event.type;
         const data = event.data || {};
-        const isDelayedHit = (type === 'action' && (data.effect === 'lightning' || data.effect === 'bomb_blast'));
+        // Mọi đòn đánh (action) đều trì hoãn trừ thanh máu cho tới khi hiệu ứng hình ảnh chạm trúng Boss (onHit)
+        const isDelayedHit = (type === 'action');
 
-        // Nếu là chiêu có độ trễ (sét giáng từ trời hoặc bộc phá bay tới), chỉ cập nhật thông tin chung, CHƯA trừ máu thanh HP
+        // Nếu là chiêu hành động, chỉ cập nhật thông tin chung trước, CHƯA trừ máu thanh HP
         if (data.game_snapshot) {
             updateGameState(data.game_snapshot, !isDelayedHit);
         }
@@ -398,14 +399,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         originX: playerX,
                         originY: playerY,
                         groundY: groundY,
-                        onMultiHit: (tickDmg) => {
+                        onMultiHit: (tickIdx, tickDmg) => {
                             bossRenderer.triggerHurt();
+                            sound.playBlackHoleGalaxy();
+                            effects.triggerScreenShake(12, 16);
+                            effects.addDamageNumber(bossX + 20, bossY - 50, tickDmg || 500000, true);
+                        },
+                        onHit: () => {
+                            applyDamageHit(data);
                         }
                     });
-                    applyDamageHit(data);
                 } else {
-                    effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
-                    applyDamageHit(data);
+                    effects.addSkill(effect, bossX, bossY, {
+                        originX: playerX,
+                        originY: playerY,
+                        groundY: groundY,
+                        onHit: () => {
+                            applyDamageHit(data);
+                        }
+                    });
                 }
             } 
             // 2. KHI BÌNH LUẬN (chem, lua, bang, set, bom, doc) HOẶC LIKE:
@@ -415,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     playerRenderer.triggerAttack(nickname, avatar, skill, effect);
                     sound.playSlash();
                 } else if (effect === 'fireball') {
-                    // Chat "lua": Arcane Missiles ma thuật
+                    // Chat "lua": Arcane Missiles ma thuật bay tới tâm ngực boss
                     playerRenderer.triggerCast(nickname, avatar, skill, effect);
                     sound.playFireball();
                 } else if (effect === 'lightning') {
@@ -472,6 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (effect === 'poison_sting') {
                     effects.addSkill('poison_sting', bossX, bossY, {
                         originX: playerX,
+                        originY: playerY,
                         groundY: groundY,
                         onHit: () => {
                             applyDamageHit(data);
@@ -482,9 +495,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
                 else {
-                    // Các chiêu đánh giáp lá cà hoặc chưởng ma pháp: trừ máu ngay
-                    effects.addSkill(effect, bossX, bossY, { originX: playerX, originY: playerY, groundY: groundY });
-                    applyDamageHit(data);
+                    // Mọi chiêu thức khác: Chờ hiệu ứng chạm Boss mới trừ máu
+                    effects.addSkill(effect, bossX, bossY, {
+                        originX: playerX,
+                        originY: playerY,
+                        groundY: groundY,
+                        onHit: () => {
+                            applyDamageHit(data);
+                        }
+                    });
                 }
             }
 
@@ -541,12 +560,34 @@ document.addEventListener('DOMContentLoaded', () => {
             addCombatFeed(bossRenderer.bossData.name || 'Boss', skillName, damage, '');
 
         } else if (type === 'boss_poison_tick') {
-            // RÚT MÁU ĐỘC TỐ ĐỊNH KỲ CỦA BOSS
-            const poisonDmg = data.damage || 80;
+            // RÚT MÁU ĐỘC TỐ ĐỊNH KỲ CỦA BOSS (15 HP/S)
+            const poisonDmg = data.damage || 15;
             effects.addDamageNumber(bossX + 20, bossY - 60, poisonDmg, false, "-🧪 ");
             bossRenderer.triggerHurt();
+            if (data.game_snapshot) {
+                updateGameState(data.game_snapshot, true);
+            } else if (data.boss) {
+                bossRenderer.setBossData(data.boss);
+                bossHpTextEl.textContent = `${data.boss.current_hp.toLocaleString()} / ${data.boss.max_hp.toLocaleString()} HP (${data.boss.hp_percent}%)`;
+                targetHpPercent = data.boss.hp_percent;
+            }
+            if (data.boss && data.boss.is_dead) {
+                scheduleVictory(data.boss, 'poison_sting');
+            }
+
+        } else if (type === 'boss_poison_end') {
+            // ĐỘC HẾT HIỆU LỰC SAU 5 GIÂY: TẮT HIỆU ỨNG VÀ BONG BÓNG ĐỘC
+            if (data.game_snapshot) {
+                updateGameState(data.game_snapshot, true);
+            }
             if (data.boss) {
                 bossRenderer.setBossData(data.boss);
+            }
+            if (bossRenderer.bossData) {
+                bossRenderer.bossData.is_poisoned = false;
+            }
+            if (bossRenderer.poisonBubbles) {
+                bossRenderer.poisonBubbles = [];
             }
 
         } else if (type === 'boss_poisoned') {
