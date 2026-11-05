@@ -9,6 +9,15 @@ const MAX_ACTIVE_PIXELFX = 10;    // Giới hạn hiệu ứng PixelFX cùng lú
 // Palette lửa (đỏ -> cam -> vàng -> trắng) cho Cầu Lửa
 const FIRE_PALETTE = ["#4a1712", "#c9281f", "#f2561d", "#ff8a2a", "#ffc23d", "#ffe26b", "#fff3a6", "#ffffff"];
 
+// Khoảng cách (px gốc) từ gốc đáy hiệu ứng lên tâm thị giác, đo từ PixelFX: dùng để căn tâm nổ vào giữa thân Boss
+const CENTER_OFFSET = {
+    'impacts/crit-hit': 27,
+    'heavyCleave': 21,
+    'charmed': 45,
+    'explosions/small-explosion': 25,
+    'nature/acid-splash': 20
+};
+
 // LỚP DIỄN HOẠT HIỆU ỨNG TỪ THƯ VIỆN PIXELFX
 class PixelFXInstance {
     constructor(effectMod, x, y, scale = 2.8, customOptions = {}) {
@@ -227,7 +236,7 @@ class VisualSkillEffect {
                 effectsManager.triggerScreenShake(6, 10);
                 effectsManager.spawnPixelFX('doubleSlash', this.targetX, groundY, 2.3, { duration: 1.0 });
             } else if (this.frame === 4) {
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, this.targetY, 1.8, { duration: 0.8 });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 1.8, { center: true, duration: 0.8 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -266,7 +275,7 @@ class VisualSkillEffect {
             } else if (this.frame === 48) {
                 // ĐÚNG KHOẢNH KHẮC TIA SÉT HUYẾT LÔI GIÁNG XUỐNG TÂM BOSS:
                 effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, this.targetY, 2.2, { duration: 0.8 });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.2, { center: true, duration: 0.8 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -315,7 +324,7 @@ class VisualSkillEffect {
         else if (this.type === 'heart_barrage' || this.type === 'magic_bullet') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(3, 6);
-                effectsManager.spawnPixelFX('charmed', this.targetX, this.targetY, 2.2, { duration: 1.4 });
+                effectsManager.spawnPixelFX('charmed', this.targetX, this.targetY, 2.2, { center: true, duration: 1.4 });
             } else if (this.frame === 8) {
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
@@ -359,7 +368,7 @@ class VisualSkillEffect {
                 });
             } else if (this.frame === 48) {
                 effectsManager.triggerScreenShake(16, 22);
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, groundY - 25, 1.8, { duration: 0.8 });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, groundY - 25, 1.8, { duration: 0.8 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -420,7 +429,7 @@ class VisualSkillEffect {
                 effectsManager.spawnPixelFX('arcane/star-fall', this.targetX, groundY, 2.4, { duration: 2.4 });
             } else if (this.frame === 16) {
                 // ĐÚNG THỜI ĐIỂM VẠN KIẾM HUYẾT THẦN ĐÂM XUỐNG TÂM BOSS:
-                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.2, { duration: 0.8 });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.2, { center: true, duration: 0.8 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -462,7 +471,7 @@ class VisualSkillEffect {
                 effectsManager.spawnPixelFX('nuke', this.targetX, groundY, 2.8, { duration: 2.6 });
             } else if (this.frame === 18) {
                 // ĐÚNG THỜI ĐIỂM NẤM NGUYÊN TỬ PHÁT NỔ TỐI ĐẠI:
-                effectsManager.spawnPixelFX('criticalHit', this.targetX, this.targetY, 2.2, { duration: 0.9 });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.2, { center: true, duration: 0.9 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -476,7 +485,7 @@ class VisualSkillEffect {
                 effectsManager.spawnPixelFX('smite', this.targetX, groundY, 2.8, { duration: 2.3 });
             } else if (this.frame === 16) {
                 // ĐÚNG THỜI ĐIỂM THÁNH KIẾM CẮM PHẬP XUỐNG SÀN:
-                effectsManager.spawnPixelFX('heavyCleave', this.targetX, this.targetY, 2.4, { duration: 1.5 });
+                effectsManager.spawnPixelFX('heavyCleave', this.targetX, this.targetY, 2.4, { center: true, duration: 1.5 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -517,7 +526,7 @@ class VisualSkillEffect {
                 effectsManager.triggerScreenShake(16, 22);
                 effectsManager.spawnPixelFX('fireTornado', this.targetX, groundY, 2.8, { duration: 2.3 });
             } else if (this.frame === 15) {
-                effectsManager.spawnPixelFX('heavyCleave', this.targetX, this.targetY, 2.4, { duration: 1.6 });
+                effectsManager.spawnPixelFX('heavyCleave', this.targetX, this.targetY, 2.4, { center: true, duration: 1.6 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
@@ -540,14 +549,14 @@ class VisualSkillEffect {
             // RÚT MÁU 5 LẦN MỖI LẦN 500,000 HP TẠI CÁC NHỊP XOÁY HỐ ĐEN:
             else if (this.frame === 20 || this.frame === 42 || this.frame === 64 || this.frame === 86) {
                 effectsManager.triggerScreenShake(12, 16);
-                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX + (Math.random() - 0.5) * 30, this.targetY + (Math.random() - 0.5) * 30, 2.0, { duration: 0.7 });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX + (Math.random() - 0.5) * 30, this.targetY + (Math.random() - 0.5) * 30, 2.0, { center: true, duration: 0.7 });
                 if (typeof this.options.onMultiHit === 'function') {
                     this.options.onMultiHit(Math.floor(this.frame / 22) + 1, 500000);
                 }
             } else if (this.frame === 108) {
                 // Nhịp thứ 5 kết thúc chuỗi rút máu 2.500.000 HP:
                 effectsManager.triggerScreenShake(18, 24);
-                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.6, { duration: 0.8 });
+                effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 2.6, { center: true, duration: 0.8 });
                 if (typeof this.options.onMultiHit === 'function') {
                     this.options.onMultiHit(5, 500000);
                 }
@@ -586,6 +595,8 @@ class EffectsManager {
     }
 
     spawnPixelFX(effectName, x, y, scale = 2.8, options = {}) {
+        // center: true -> y là TÂM hình ảnh mong muốn (không phải gốc/đáy hiệu ứng)
+        if (options.center) y += (CENTER_OFFSET[effectName] || 0) * scale;
         if (!window.PixelFX || !window.PixelFX.effects) return null;
         const mod = window.PixelFX.effects[effectName];
         if (!mod) {

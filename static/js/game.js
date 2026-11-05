@@ -135,8 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const playerY = groundY;
         // Boss đứng bên PHẢI
         const bossX = isPortrait ? canvas.width * 0.77 : canvas.width * 0.78;
-        // Tâm ngực quái vật cho các chiêu thức bay tới (ngang thân boss, tâm giữa ngực quái vật)
-        const bossY = isPortrait ? groundY - 135 : groundY - 160;
+        // Tâm thân Boss: tính đúng theo cách boss.js vẽ (kích thước, lơ lửng, tỉ lệ 0.52) để đòn đánh nổ giữa thân trên mọi màn hình
+        const bType = (bossRenderer && bossRenderer.bossData && bossRenderer.bossData.boss_type) || 'dragon';
+        const bossSize = isPortrait ? Math.min(canvas.width * 0.44, 280) : 340;
+        const hover = (bType === 'dragon' || bType === 'phoenix' || bType === 'frost') ? -22 : 0;
+        const bossY = groundY - bossSize * 0.975 + hover + bossSize * 0.52;
 
         return { isPortrait, groundY, playerX, playerY, bossX, bossY };
     }
