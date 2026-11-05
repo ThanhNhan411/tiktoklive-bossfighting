@@ -15,7 +15,8 @@ const CENTER_OFFSET = {
     'heavyCleave': 21,
     'charmed': 45,
     'explosions/small-explosion': 25,
-    'nature/acid-splash': 20
+    'nature/acid-splash': 20,
+    'ice/snowflake-burst': 40
 };
 
 // LỚP DIỄN HOẠT HIỆU ỨNG TỪ THƯ VIỆN PIXELFX
@@ -249,7 +250,10 @@ class VisualSkillEffect {
         if (this.type === 'sword_slash') {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(6, 10);
-                effectsManager.spawnPixelFX('doubleSlash', this.targetX, groundY, 2.3, { duration: 1.0 });
+                // Tâm nhát chém chéo nằm ở (+40,-28) so với gốc; đặt trùng tâm thân Boss và thu nhỏ nếu sẽ tràn khỏi màn hình
+                const maxRight = (effectsManager.canvas.width - 8 - this.targetX) / 65;
+                const slashScale = Math.max(1.1, Math.min(2.3, maxRight));
+                effectsManager.spawnPixelFX('doubleSlash', this.targetX - 40 * slashScale, this.targetY + 28 * slashScale, slashScale, { duration: 1.0 });
             } else if (this.frame === 4) {
                 effectsManager.spawnPixelFX('impacts/crit-hit', this.targetX, this.targetY, 1.8, { center: true, duration: 0.8 });
                 if (typeof this.options.onHit === 'function') {
@@ -296,12 +300,18 @@ class VisualSkillEffect {
 
         // 4. Băng (dùng ice/ice-spikes kết hợp ice/snowflake-burst - Palette Blood)
         else if (this.type === 'ice_shard') {
+            const footX = originX + 30;
             if (this.frame === 1) {
-                effectsManager.triggerScreenShake(7, 12);
-                effectsManager.spawnPixelFX('ice/ice-spikes', this.targetX, groundY, 2.3, { duration: 2.2 });
-                effectsManager.spawnPixelFX('ice/snowflake-burst', this.targetX, groundY, 2.4, { duration: 2.0 });
-            } else if (this.frame === 10) {
-                // ĐÚNG THỜI ĐIỂM GAI BĂNG HUYẾT SẮC TRỒI LÊN ĐÂM TRÚNG BOSS:
+                effectsManager.triggerScreenShake(5, 8);
+                // Dải băng chạy dọc mặt sàn từ chân nhân vật tới chân Boss (kéo giãn đúng khoảng cách, reach gốc = 172px)
+                effectsManager.spawnPixelFX('ice/ice-spikes', footX, groundY, 1, {
+                    duration: 2.2,
+                    aim: { sx: footX, sy: groundY, tx: this.targetX, ty: groundY, startOff: 0, startY: 0, targetDist: 172 }
+                });
+            } else if (this.frame === 15) {
+                // Gai băng đã lan tới Boss: nở bông tuyết giữa thân + trừ máu
+                effectsManager.triggerScreenShake(9, 12);
+                effectsManager.spawnPixelFX('ice/snowflake-burst', this.targetX, this.targetY, 2.2, { center: true, duration: 2.0 });
                 if (typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
