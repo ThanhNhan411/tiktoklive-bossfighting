@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
         item.innerHTML = `
             <span class="feed-user">@${nickname}</span>
             <span class="feed-skill">${skill}</span>
-            <span class="feed-dmg">-${damage.toLocaleString()}</span>
+            <span class="feed-dmg">${damage > 0 ? "-" + damage.toLocaleString() : ""}</span>
         `;
         combatFeedEl.insertBefore(item, combatFeedEl.firstChild);
 

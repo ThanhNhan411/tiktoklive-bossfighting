@@ -22,6 +22,7 @@ class Boss:
         self.poison_dmg_per_tick = 50
         self.last_poison_tick = 0
         self.poison_start_time = 0
+        self.last_poison_activity = 0
         self.poison_ticks_done = 0
         self.poison_ticks_left = 0
 
@@ -71,6 +72,7 @@ class Boss:
         while self.poison_ticks_done < due and not self.is_dead:
             self.poison_ticks_done += 1
             dmg += self.take_damage(self.poison_dmg_per_tick, "Kịch Độc")
+            self.last_poison_activity = now
         finished = self.poison_ticks_done >= total_ticks or self.is_dead
         if finished:
             self.is_poisoned = False
@@ -366,7 +368,8 @@ class GameState:
             if not self.auto_heal_enabled or self.boss.is_dead or self.boss.is_poisoned:
                 return 0, False
             now = time.time()
-            idle_seconds = now - self.last_interaction_time
+            # Độc cũng tính là đang giao tranh: chờ đủ idle_heal_delay sau tick độc cuối mới hồi máu
+            idle_seconds = now - max(self.last_interaction_time, self.boss.last_poison_activity)
             if idle_seconds >= self.idle_heal_delay:
                 heal_val = max(50, int(self.boss.max_hp * self.heal_percent_per_sec))
                 actual = self.boss.heal(heal_val)
