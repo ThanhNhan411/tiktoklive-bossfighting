@@ -216,7 +216,7 @@ class VisualSkillEffect {
             case 'ice_shard': return 70;
             case 'bomb_blast': return 70;
             case 'poison_sting': return 75;
-            case 'player_shield': return 90;
+            case 'player_shield': return 30;
             case 'boss_rage': return 90;
             case 'boss_fireball': return 60;
             case 'boss_lightning': return 85;
@@ -436,11 +436,10 @@ class VisualSkillEffect {
             }
         }
 
-        // Khiên Hộ Giá: arcane/time-stop bảo vệ người chơi không nhận sát thương
+        // Khiên Hộ Giá: bong bóng thánh quang nhỏ bao quanh DUY NHẤT nhân vật (targetX/Y = vị trí người chơi)
         else if (this.type === 'player_shield') {
             if (this.frame === 1) {
-                effectsManager.triggerScreenShake(8, 12);
-                effectsManager.spawnPixelFX('arcane/time-stop', this.targetX, groundY, 2.8, { duration: 4.5 });
+                effectsManager.spawnPixelFX('holy/divine-shield', this.targetX, groundY, 1.25, { duration: this.options.shieldDuration || 8 });
             }
         }
 
@@ -589,6 +588,11 @@ class VisualSkillEffect {
             }
         }
 
+        // Kỹ năng chưa có nhánh riêng (vd. bình luận thường, hộ giá): trừ máu ở frame 8
+        else if (this.frame === 8 && typeof this.options.onHit === 'function') {
+            this.options.onHit(this);
+        }
+
         if (this.frame >= this.maxFrames) {
             this.isDead = true;
         }
@@ -645,7 +649,7 @@ class EffectsManager {
         if (this.damageNumbers.length >= MAX_DAMAGE_NUMBERS) {
             this.damageNumbers.shift();
         }
-        const text = `${prefix}${amount.toLocaleString()}`;
+        const text = amount === 0 ? prefix.trim() : `${prefix}${amount.toLocaleString()}`;
         const color = isCrit ? '#ff1744' : (amount >= 50000 ? '#ffd700' : (amount >= 10000 ? '#ff9100' : (amount >= 1000 ? '#00e5ff' : '#ffffff')));
         this.damageNumbers.push(new DamageNumber(x, y, text, color, isCrit));
     }

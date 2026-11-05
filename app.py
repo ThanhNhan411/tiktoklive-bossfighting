@@ -53,101 +53,126 @@ def broadcast_event(event_type, data):
 
 tiktok_manager = TikTokManager(game_state=game_state, broadcast_callback=broadcast_event)
 
-def _idle_heal_worker():
-    """Vòng lặp chạy nền kiểm tra hồi máu mỗi giây khi không có tương tác."""
-    while True:
-        time.sleep(1.0)
-        try:
-            actual_heal, healed = game_state.check_idle_heal()
-            if healed and actual_heal > 0:
-                broadcast_event("boss_heal", {
-                    "heal_amount": actual_heal,
-                    "boss_name": game_state.boss.name,
-                    "message": f"⚠️ {game_state.boss.name} đang hồi máu (+{actual_heal:,} HP) do không có tương tác!"
-                })
-        except Exception:
-            pass
+import traceback
 
-def _boss_combat_worker():
-    """Vòng lặp kiểm tra Boss phản công Dũng Sĩ & Rút máu độc mỗi giây."""
+def _heal_tick():
+    """Boss tự hồi máu khi không có tương tác."""
+    actual_heal, healed = game_state.check_idle_heal()
+    if healed and actual_heal > 0:
+        broadcast_event("boss_heal", {
+            "heal_amount": actual_heal,
+            "boss_name": game_state.boss.name,
+            "message": f"⚠️ {game_state.boss.name} đang hồi máu (+{actual_heal:,} HP) do không có tương tác!"
+        })
+
+def _poison_tick():
+    """Rút máu độc đúng nhịp mỗi giây."""
+    poison_dmg, is_poisoned, ended = game_state.boss.check_poison_tick()
+    if poison_dmg > 0:
+        broadcast_event("boss_poison_tick", {
+            "damage": poison_dmg,
+            "boss_name": game_state.boss.name,
+            "message": f"🧪 {game_state.boss.name} bị trúng độc rút máu (-{poison_dmg} HP)!",
+            "boss": game_state.boss.to_dict()
+        })
+    if ended:
+        broadcast_event("boss_poison_end", {
+            "boss_name": game_state.boss.name,
+            "message": f"✨ {game_state.boss.name} đã hóa giải độc tố!",
+            "boss": game_state.boss.to_dict()
+        })
+
+def _rage_tick():
+    """Hết 5 giây cảnh báo -> Boss xả Nộ (hoặc khiên chặn / huỷ nếu có người chết)."""
+    if not game_state.rage_warning_active or time.time() < game_state.rage_warning_end_time:
+        return
+    success, shielded, actual_dmg, shield_by = game_state.execute_boss_rage()
+    if not success:
+        broadcast_event("boss_rage_execute", {
+            "boss_name": game_state.boss.name,
+            "cancelled": True,
+            "shielded": False,
+            "player": game_state.player.to_dict(),
+            "boss": game_state.boss.to_dict()
+        })
+    elif shielded:
+        broadcast_event("boss_rage_execute", {
+            "boss_name": game_state.boss.name,
+            "shielded": True,
+            "shield_by": shield_by,
+            "message": f"🛡️ @{shield_by} đã hô 'HỘ GIÁ!' thành công! Khiên Ngưng Đọng Thời Gian đã cứu mạng Dũng Sĩ khỏi Nộ Hủy Diệt!",
+            "player": game_state.player.to_dict(),
+            "boss": game_state.boss.to_dict()
+        })
+    else:
+        broadcast_event("boss_rage_execute", {
+            "boss_name": game_state.boss.name,
+            "shielded": False,
+            "damage": actual_dmg,
+            "message": f"💥 {game_state.boss.name} xả NỘ HỦY DIỆT trúng Dũng Sĩ làm Dũng Sĩ gục ngã ngay lập tức! Thả tim để hồi sinh!",
+            "player": game_state.player.to_dict(),
+            "boss": game_state.boss.to_dict()
+        })
+
+def _boss_attack_tick():
+    """Boss tự động phản công Dũng Sĩ theo chu kỳ cấu hình."""
+    if not (game_state.boss_auto_attack_enabled and not game_state.boss.is_dead and not game_state.player.is_dead):
+        return
+    if time.time() - game_state.last_boss_attack_time < game_state.boss_attack_interval:
+        return
+    skill, dmg = game_state.boss_attack_player()
+    if not skill:
+        return
+    blocked = bool(skill.get("blocked"))
+    broadcast_event("boss_attack_player", {
+        "skill_name": skill["name"],
+        "effect": skill["effect"],
+        "damage": dmg,
+        "blocked": blocked,
+        "message": (f"🛡️ Khiên Hộ Giá chặn đứng {skill['name']} của {game_state.boss.name}!" if blocked
+                    else f"💥 {game_state.boss.name} {skill['message']} (-{dmg} HP)"),
+        "player": game_state.player.to_dict(),
+        "boss": game_state.boss.to_dict()
+    })
+
+_tick_lock = threading.Lock()
+_last_fast_tick = 0.0
+_last_heal_tick = 0.0
+
+def drive_game_tick():
+    """Chạy toàn bộ logic theo thời gian (độc, nộ, phản công, hồi máu).
+    Được gọi từ luồng nền VÀ từ vòng lặp SSE, nên vẫn chạy đúng dù luồng nền không hoạt động (vd. trên Render)."""
+    global _last_fast_tick, _last_heal_tick
+    if not _tick_lock.acquire(False):
+        return
+    try:
+        now = time.time()
+        if now - _last_fast_tick >= 0.2:
+            _last_fast_tick = now
+            for fn in (_poison_tick, _rage_tick, _boss_attack_tick):
+                try:
+                    fn()
+                except Exception:
+                    traceback.print_exc()
+        if now - _last_heal_tick >= 1.0:
+            _last_heal_tick = now
+            try:
+                _heal_tick()
+            except Exception:
+                traceback.print_exc()
+    finally:
+        _tick_lock.release()
+
+def _game_tick_worker():
     while True:
         time.sleep(0.25)
         try:
-            # 1. Rút máu khi Boss bị trúng độc (4 giây, mỗi giây 50 HP)
-            poison_dmg, is_poisoned, ended = game_state.boss.check_poison_tick()
-            if poison_dmg > 0:
-                broadcast_event("boss_poison_tick", {
-                    "damage": poison_dmg,
-                    "boss_name": game_state.boss.name,
-                    "message": f"🧪 {game_state.boss.name} bị trúng độc rút máu (-{poison_dmg} HP)!",
-                    "boss": game_state.boss.to_dict(),
-                    "game_snapshot": game_state.get_snapshot()
-                })
-            if ended:
-                broadcast_event("boss_poison_end", {
-                    "boss_name": game_state.boss.name,
-                    "message": f"✨ {game_state.boss.name} đã hóa giải độc tố!",
-                    "boss": game_state.boss.to_dict(),
-                    "game_snapshot": game_state.get_snapshot()
-                })
-
-            # 2. Kiểm tra cảnh báo Nộ Boss (5 giây)
-            if game_state.rage_warning_active:
-                if time.time() >= game_state.rage_warning_end_time:
-                    success, shielded, actual_dmg, shield_by = game_state.execute_boss_rage()
-                    if not success:
-                        # Dũng Sĩ/Boss đã chết trong lúc đếm ngược: báo client tắt bảng đếm ngược
-                        broadcast_event("boss_rage_execute", {
-                            "boss_name": game_state.boss.name,
-                            "cancelled": True,
-                            "shielded": False,
-                            "player": game_state.player.to_dict(),
-                            "boss": game_state.boss.to_dict()
-                        })
-                    if success:
-                        if shielded:
-                            broadcast_event("boss_rage_execute", {
-                                "boss_name": game_state.boss.name,
-                                "shielded": True,
-                                "shield_by": shield_by,
-                                "message": f"🛡️ @{shield_by} đã hô 'HỘ GIÁ!' thành công! Khiên Ngưng Đọng Thời Gian đã cứu mạng Dũng Sĩ khỏi Nộ Hủy Diệt!",
-                                "player": game_state.player.to_dict(),
-                                "boss": game_state.boss.to_dict()
-                            })
-                        else:
-                            broadcast_event("boss_rage_execute", {
-                                "boss_name": game_state.boss.name,
-                                "shielded": False,
-                                "damage": actual_dmg,
-                                "message": f"💥 {game_state.boss.name} xả NỘ HỦY DIỆT trúng Dũng Sĩ làm Dũng Sĩ gục ngã ngay lập tức! Thả tim để hồi sinh!",
-                                "player": game_state.player.to_dict(),
-                                "boss": game_state.boss.to_dict()
-                            })
-
-            # 3. Boss tự động phản công Dũng Sĩ theo chu kỳ
-            now = time.time()
-            if (game_state.boss_auto_attack_enabled and 
-                not game_state.boss.is_dead and 
-                not game_state.player.is_dead):
-                if now - game_state.last_boss_attack_time >= game_state.boss_attack_interval:
-                    skill, dmg = game_state.boss_attack_player()
-                    if skill and dmg > 0:
-                        broadcast_event("boss_attack_player", {
-                            "skill_name": skill["name"],
-                            "effect": skill["effect"],
-                            "damage": dmg,
-                            "message": f"💥 {game_state.boss.name} {skill['message']} (-{dmg} HP)",
-                            "player": game_state.player.to_dict(),
-                            "boss": game_state.boss.to_dict()
-                        })
+            drive_game_tick()
         except Exception:
-            import traceback; traceback.print_exc()
+            traceback.print_exc()
 
-heal_thread = threading.Thread(target=_idle_heal_worker, daemon=True)
-heal_thread.start()
-
-combat_thread = threading.Thread(target=_boss_combat_worker, daemon=True)
-combat_thread.start()
+game_tick_thread = threading.Thread(target=_game_tick_worker, daemon=True)
+game_tick_thread.start()
 
 @app.route("/")
 @app.route("/game")
@@ -182,15 +207,19 @@ def sse_stream():
         }, ensure_ascii=False)
         yield f"data: {initial_payload}\n\n"
 
+        last_ping = time.time()
         try:
             while True:
                 # Đợi tin nhắn mới, heartbeat sau mỗi 15 giây
                 try:
-                    msg = client_queue.get(timeout=15.0)
+                    msg = client_queue.get(timeout=0.25)
                     yield msg
                 except queue.Empty:
-                    # Gửi heartbeat giữ kết nối
-                    yield ": ping\n\n"
+                    # Nhịp game dự phòng: đảm bảo độc/nộ/phản công/hồi máu chạy khi có người xem
+                    drive_game_tick()
+                    if time.time() - last_ping >= 15.0:
+                        last_ping = time.time()
+                        yield ": ping\n\n"  # heartbeat giữ kết nối
         except GeneratorExit:
             with sse_lock:
                 if client_queue in sse_listeners:
@@ -332,6 +361,7 @@ def api_boss_shield():
     game_state.activate_shield(nickname)
     broadcast_event("shield_activated", {
         "nickname": nickname,
+        "duration": game_state.SHIELD_DURATION,
         "message": f"🛡️ @{nickname} đã hô 'HỘ GIÁ!' kích hoạt Khiên Ngưng Đọng Thời Gian bảo vệ Dũng Sĩ!",
         "player": game_state.player.to_dict()
     })

@@ -241,6 +241,7 @@ class TikTokManager:
                 "nickname": nickname,
                 "avatar": avatar,
                 "player": self.game_state.player.to_dict(),
+                "duration": self.game_state.SHIELD_DURATION,
                 "message": f"🛡️ @{nickname} đã hô 'HỘ GIÁ!' kích hoạt Khiên Ngưng Đọng Thời Gian bảo vệ Dũng Sĩ!"
             })
             event_data = self.game_state.register_attack(

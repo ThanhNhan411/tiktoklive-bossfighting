@@ -173,6 +173,7 @@ BOSS_TEMPLATES = [
 ]
 
 class GameState:
+    SHIELD_DURATION = 8.0  # giây khiên Hộ Giá tồn tại
     def __init__(self):
         self.lock = threading.RLock()
         self.level = 1
@@ -205,6 +206,7 @@ class GameState:
         self.rage_warning_end_time = 0
         self.player_shielded = False
         self.player_shield_by = ""
+        self.player_shield_end = 0
 
     def start_rage_warning(self, duration=5.0):
         """Bắt đầu cảnh báo 5 giây trước khi Boss xả Nộ Hủy Diệt."""
@@ -213,8 +215,6 @@ class GameState:
                 return False
             self.rage_warning_active = True
             self.rage_warning_end_time = time.time() + duration
-            self.player_shielded = False
-            self.player_shield_by = ""
             return True
 
     def activate_shield(self, nickname="Dũng Sĩ"):
@@ -222,7 +222,15 @@ class GameState:
         with self.lock:
             self.player_shielded = True
             self.player_shield_by = nickname
+            self.player_shield_end = time.time() + self.SHIELD_DURATION
             return True
+
+    def is_shield_active(self):
+        """Khiên còn hiệu lực: Dũng Sĩ không nhận sát thương từ Boss (đòn thường và Nộ)."""
+        if self.player_shielded and time.time() >= self.player_shield_end:
+            self.player_shielded = False
+            self.player_shield_by = ""
+        return self.player_shielded
 
     def execute_boss_rage(self):
         """Kích hoạt Nộ Boss: tác động lên người chơi, nộ làm người chơi chết ngay lập tức nếu không có khiên."""
@@ -232,7 +240,7 @@ class GameState:
             if self.player.is_dead or self.boss.is_dead:
                 return False, False, 0, ""
 
-            shielded = self.player_shielded
+            shielded = self.is_shield_active()
             shield_by = self.player_shield_by
 
             if shielded:
@@ -242,8 +250,6 @@ class GameState:
                 # Không có khiên -> Người chơi chết ngay lập tức!
                 actual_dmg = self.player.take_damage(self.player.current_hp if self.player.current_hp > 0 else 999999)
 
-            self.player_shielded = False
-            self.player_shield_by = ""
             return True, shielded, actual_dmg, shield_by
 
     def set_player_config(self, max_hp=None, revive_hearts=None, auto_attack=None, attack_interval=None):
@@ -299,8 +305,11 @@ class GameState:
             else:
                 skill = random.choice(skills)
 
-            actual_dmg = self.player.take_damage(skill["damage"])
             self.last_boss_attack_time = time.time()
+            if self.is_shield_active():
+                # Khiên Hộ Giá: chặn hoàn toàn đòn của Boss
+                return dict(skill, blocked=True), 0
+            actual_dmg = self.player.take_damage(skill["damage"])
             return skill, actual_dmg
 
     def heal_player(self, amount=150, nickname="Dũng sĩ"):
@@ -471,6 +480,6 @@ class GameState:
                 "boss_attack_interval": self.boss_attack_interval,
                 "rage_warning_active": self.rage_warning_active,
                 "rage_warning_remaining": rage_warning_remaining,
-                "player_shielded": self.player_shielded,
+                "player_shielded": self.is_shield_active(),
                 "player_shield_by": self.player_shield_by
             }

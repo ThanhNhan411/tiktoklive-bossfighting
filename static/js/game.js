@@ -503,7 +503,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 else {
                     // Mọi chiêu thức khác: Chờ hiệu ứng chạm Boss mới trừ máu
-                    effects.addSkill(effect, bossX, bossY, {
+                    // ("hộ giá": khiên chỉ hiện ở nhân vật qua sự kiện shield_activated, ở đây chỉ tính sát thương)
+                    effects.addSkill(effect === 'player_shield' ? 'shield_strike' : effect, bossX, bossY, {
                         originX: playerX,
                         originY: playerY,
                         groundY: groundY,
@@ -538,14 +539,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // Boss hồi máu tại vị trí Boss bên phải (scale 80% tinh gọn)
             const healAmount = data.heal_amount || 0;
             bossRenderer.triggerHeal();
-            effects.spawnPixelFX('heal', bossX, groundY, 2.4);
-            effects.addDamageNumber(bossX + 25, bossY - 60, healAmount, false, "+");
+            // Hiệu ứng hồi máu của Boss: holy/heal-aoe lan trên sàn dưới chân Boss + số máu hồi
+            effects.spawnPixelFX('holy/heal-aoe', bossX, groundY, 2.2, { duration: 2.6 });
+            if (healAmount > 0) effects.addDamageNumber(bossX + 25, bossY - 60, healAmount, false, "+");
 
         } else if (type === 'boss_attack_player') {
             // BOSS TẤNG CÔNG NGƯỢC LẠI DŨNG SĨ VỚI CÁC SKILL ĐẶC BIỆT
             const skillName = data.skill_name || 'Cầu Lửa Hắc Ám';
             const effect = data.effect || 'boss_fireball';
-            const damage = data.damage || 500;
+            const blocked = !!data.blocked;
+            const damage = blocked ? 0 : (data.damage || 500);
 
             if (effect === 'boss_fireball') sound.playFireball();
             else if (effect === 'boss_lightning') sound.playLightning();
@@ -557,14 +560,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 originY: bossY,
                 groundY: groundY,
                 onHit: () => {
-                    playerRenderer.triggerHurt();
-                    effects.addDamageNumber(playerX, playerY - 45, damage, true, "-");
+                    if (blocked) {
+                        // Khiên Hộ Giá chặn đòn: không mất máu, không chớp đỏ
+                        effects.addDamageNumber(playerX, playerY - 45, 0, false, "🛡️ CHẶN");
+                    } else {
+                        playerRenderer.triggerHurt();
+                        effects.addDamageNumber(playerX, playerY - 45, damage, true, "-");
+                    }
                     if (data.player) {
                         playerRenderer.setPlayerData(data.player);
                     }
                 }
             });
-            addCombatFeed(bossRenderer.bossData.name || 'Boss', skillName, damage, '');
+            addCombatFeed(bossRenderer.bossData.name || 'Boss', blocked ? skillName + ' (bị chặn)' : skillName, damage, '');
 
         } else if (type === 'boss_poison_tick') {
             // RÚT MÁU ĐỘC TỐ ĐỊNH KỲ CỦA BOSS (50 HP/S)
@@ -613,7 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // NGƯỜI CHƠI CHAT "hộ giá" KÍCH HOẠT KHIÊN TIME-STOP
             sound.playVictory();
             effects.triggerScreenShake(8, 14);
-            effects.addSkill('player_shield', playerX, playerY, { groundY: groundY });
+            effects.addSkill('player_shield', playerX, playerY, { groundY: groundY, shieldDuration: data.duration || 8 });
             addCombatFeed(data.nickname || 'Hiệp sĩ', '🛡️ KÍCH HOẠT HỘ GIÁ (KHIÊN THỜI GIAN)', 0, '');
 
         } else if (type === 'boss_rage_execute') {
