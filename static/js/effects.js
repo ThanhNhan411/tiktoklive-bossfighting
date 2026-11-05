@@ -231,7 +231,7 @@ class VisualSkillEffect {
             }
         }
 
-        // 2. Cầu Lửa: 3 quả cầu lửa lần lượt xuất phát từ người chơi, nổ giữa thân Boss khi chạm
+        // 2. Cầu Lửa: 3 quả cầu lửa (PixelFX 'fireball', palette lửa gốc) bay từ người chơi tới giữa thân Boss, không nổ
         else if (this.type === 'fireball') {
             const launchY = (this.options.originY || groundY) - 50;   // tầm tay/ngực người chơi
             const launches = [1, 7, 13];
@@ -252,10 +252,8 @@ class VisualSkillEffect {
             }
             const hitIdx = arriveFrames.indexOf(this.frame);
             if (hitIdx !== -1) {
-                // Nổ ngay giữa thân Boss (gốc vụ nổ nằm ở đáy nên dời xuống để lõi nổ trùng tâm ngực)
-                const last = hitIdx === arriveFrames.length - 1;
-                effectsManager.triggerScreenShake(last ? 12 : 7, last ? 14 : 8);
-                effectsManager.spawnPixelFX('explosions/small-explosion', this.targetX + (hitIdx - 1) * 14, this.targetY + 55, last ? 2.0 : 1.5, { duration: last ? 1.6 : 1.2 });
+                // Không vụ nổ: cầu lửa chạm tâm thân Boss rồi tan, chỉ rung nhẹ
+                effectsManager.triggerScreenShake(hitIdx === arriveFrames.length - 1 ? 8 : 4, 6);
                 if (hitIdx === 0 && typeof this.options.onHit === 'function') {
                     this.options.onHit(this);
                 }
