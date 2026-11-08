@@ -10,7 +10,7 @@
 }
 
 body {
-    background: radial-gradient(circle at center, #1a0933 0%, #080314 70%, #000000 100%);
+    background: #000;
     overflow: hidden;
     font-family: 'Montserrat', sans-serif;
     color: #ffffff;
@@ -18,16 +18,22 @@ body {
     height: 100vh;
 }
 
-/* KHUNG 9:16 CỐ ĐỊNH: luôn hiển thị giao diện mobile dù mở bằng laptop / OBS ngang.
-   Rộng = min(100vw, 100vh * 9/16), canh giữa, phần thừa hai bên để nền tối */
+/* KHUNG 9:16 CỐ ĐỊNH: thiết kế theo bề ngang logic 405px, JS đặt width/height/left và scale (fitStage)
+   để laptop / OBS ngang cũng ra đúng giao diện mobile, phóng to vừa chiều cao cửa sổ */
+html {
+    background: #000;
+}
+
 #stage {
-    position: relative;
-    height: 100vh;
-    width: min(100vw, calc(100vh * 9 / 16));
-    margin: 0 auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 405px;
+    height: 720px;
+    --sh: 720px;
+    transform-origin: top left;
     overflow: hidden;
     background: radial-gradient(circle at center, #1a0933 0%, #080314 70%, #000000 100%);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 60px rgba(0, 0, 0, 0.8);
 }
 
 #gameCanvas {
@@ -873,7 +879,7 @@ body {
    ======================================================== */
 @media all {
     .ui-layer {
-        padding-top: 11vh;
+        padding-top: calc(var(--sh) * 0.11);
     }
 
     .boss-header-container {
@@ -881,7 +887,7 @@ body {
     }
 
     .vip-banner {
-        top: calc(11vh + 108px);
+        top: calc(calc(var(--sh) * 0.11) + 108px);
     }
 
     /* BẢNG CHIÊU THỨC / QUÀ TẶNG: HIỂN THỊ ĐẦY ĐỦ, 2 CỘT, KHÔNG CẮT */
@@ -889,7 +895,7 @@ body {
         left: 8px;
         right: 8px;
         width: auto;
-        top: 46vh;
+        top: calc(var(--sh) * 0.46);
         max-height: none;
     }
 
@@ -932,7 +938,7 @@ body {
         left: 8px;
         right: 8px;
         width: auto;
-        top: 69vh;
+        top: calc(var(--sh) * 0.69);
         max-height: none;
     }
 

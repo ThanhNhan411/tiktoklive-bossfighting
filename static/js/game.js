@@ -123,9 +123,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rageAlertEl) rageAlertEl.classList.add('hidden');
     }
 
-    // Tự động resize Canvas khớp khung nhìn
+    // Khung 9:16 "mobile": thiết kế theo bề ngang logic 405px, phóng/thu vừa cửa sổ (laptop cũng ra giao diện như điện thoại)
+    const DESIGN_W = 405;
+    function fitStage() {
+        const stage = document.getElementById('stage');
+        if (!stage) return;
+        const winW = document.documentElement.clientWidth || window.innerWidth;
+        const winH = document.documentElement.clientHeight || window.innerHeight;
+        const boxW = Math.min(winW, winH * 9 / 16);   // khung rộng tối đa 9:16, màn dọc hơn thì lấp đầy chiều ngang
+        const k = boxW / DESIGN_W;
+        const logicH = winH / k;
+        stage.style.width = DESIGN_W + 'px';
+        stage.style.height = logicH + 'px';
+        stage.style.setProperty('--sh', logicH + 'px');
+        stage.style.transform = `scale(${k})`;
+        stage.style.left = ((winW - boxW) / 2) + 'px';
+    }
+
+    // Canvas theo kích thước logic của #stage
     function resizeCanvas() {
-        // Canvas theo khung #stage 9:16 (không theo cửa sổ) để luôn ra bố cục mobile
+        fitStage();
         const stage = document.getElementById('stage');
         canvas.width = stage ? stage.clientWidth : window.innerWidth;
         canvas.height = stage ? stage.clientHeight : window.innerHeight;
@@ -138,8 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const leftPanel = document.querySelector('.left-panel');
         const rightPanel = document.querySelector('.right-panel');
         if (!leftPanel || !rightPanel) return;
-        const stageTop = document.getElementById('stage').getBoundingClientRect().top;
-        leftPanel.style.top = (rightPanel.getBoundingClientRect().bottom - stageTop + 6) + 'px';
+        leftPanel.style.top = (rightPanel.offsetTop + rightPanel.offsetHeight + 6) + 'px';
     }
     window.addEventListener('resize', layoutPortraitPanels);
     window.addEventListener('load', layoutPortraitPanels);
