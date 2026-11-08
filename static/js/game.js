@@ -125,8 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Tự động resize Canvas khớp khung nhìn
     function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        // Canvas theo khung #stage 9:16 (không theo cửa sổ) để luôn ra bố cục mobile
+        const stage = document.getElementById('stage');
+        canvas.width = stage ? stage.clientWidth : window.innerWidth;
+        canvas.height = stage ? stage.clientHeight : window.innerHeight;
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
@@ -136,11 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const leftPanel = document.querySelector('.left-panel');
         const rightPanel = document.querySelector('.right-panel');
         if (!leftPanel || !rightPanel) return;
-        if (window.innerHeight > window.innerWidth) {
-            leftPanel.style.top = (rightPanel.getBoundingClientRect().bottom + 6) + 'px';
-        } else {
-            leftPanel.style.top = '';
-        }
+        const stageTop = document.getElementById('stage').getBoundingClientRect().top;
+        leftPanel.style.top = (rightPanel.getBoundingClientRect().bottom - stageTop + 6) + 'px';
     }
     window.addEventListener('resize', layoutPortraitPanels);
     window.addEventListener('load', layoutPortraitPanels);

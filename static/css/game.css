@@ -18,6 +18,18 @@ body {
     height: 100vh;
 }
 
+/* KHUNG 9:16 CỐ ĐỊNH: luôn hiển thị giao diện mobile dù mở bằng laptop / OBS ngang.
+   Rộng = min(100vw, 100vh * 9/16), canh giữa, phần thừa hai bên để nền tối */
+#stage {
+    position: relative;
+    height: 100vh;
+    width: min(100vw, calc(100vh * 9 / 16));
+    margin: 0 auto;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #1a0933 0%, #080314 70%, #000000 100%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 60px rgba(0, 0, 0, 0.8);
+}
+
 #gameCanvas {
     position: absolute;
     top: 0;
@@ -563,7 +575,7 @@ body {
    Thu nhỏ font chữ, kích thước thanh máu, tên boss, thông báo quà tặng
    Bảng xếp hạng hiển thị rõ ràng bên dưới sàn đấu
    ======================================================== */
-@media (max-aspect-ratio: 1/1) {
+@media all {
     .ui-layer {
         padding: 10px 8px;
     }
@@ -859,7 +871,7 @@ body {
    - Giữa (~11% -> ~68%): sân đấu + thanh máu + bảng chiêu thức đầy đủ
    - Bottom ~30%: vùng bình luận / giỏ hàng / quà của TikTok, không đặt thông tin quan trọng
    ======================================================== */
-@media (max-aspect-ratio: 1/1) {
+@media all {
     .ui-layer {
         padding-top: 11vh;
     }
