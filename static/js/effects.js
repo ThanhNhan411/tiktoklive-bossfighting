@@ -251,7 +251,7 @@ class VisualSkillEffect {
             if (this.frame === 1) {
                 effectsManager.triggerScreenShake(6, 10);
                 // Tâm nhát chém chéo nằm ở (+40,-28) so với gốc; đặt trùng tâm thân Boss và thu nhỏ nếu sẽ tràn khỏi màn hình
-                const maxRight = (effectsManager.canvas.width - 8 - this.targetX) / 65;
+                const maxRight = (effectsManager.canvas.lw - 8 - this.targetX) / 65;
                 const slashScale = Math.max(1.1, Math.min(2.3, maxRight));
                 effectsManager.spawnPixelFX('doubleSlash', this.targetX - 40 * slashScale, this.targetY + 28 * slashScale, slashScale, { duration: 1.0 });
             } else if (this.frame === 4) {

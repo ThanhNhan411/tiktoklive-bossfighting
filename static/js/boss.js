@@ -197,8 +197,8 @@ class BossRenderer {
         const isLoaded = this.imagesLoaded[bType] || this.imagesLoaded['dragon'];
 
         // Kích thước hiển thị boss cân đối với sàn đấu
-        const isPortrait = this.canvas.height > this.canvas.width;
-        const baseSize = isPortrait ? Math.min(this.canvas.width * 0.44, 280) : 340;
+        const isPortrait = this.canvas.lh > this.canvas.lw;
+        const baseSize = isPortrait ? Math.min(this.canvas.lw * 0.44, 280) : 340;
         const breathScale = 1.0 + Math.sin(this.time * 2.0) * 0.015;
         const bossSize = baseSize * breathScale;
 

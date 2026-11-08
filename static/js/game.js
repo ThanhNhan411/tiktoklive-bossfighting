@@ -140,12 +140,18 @@ document.addEventListener('DOMContentLoaded', () => {
         stage.style.left = ((winW - boxW) / 2) + 'px';
     }
 
-    // Canvas theo kích thước logic của #stage
+    // Canvas: toạ độ game dùng kích thước LOGIC (canvas.lw x canvas.lh, theo #stage 405px),
+    // còn bộ đệm điểm ảnh được nhân thêm hệ số hiển thị thật (scale khung x devicePixelRatio) để nét trên laptop / màn hình lớn
+    let renderScale = 1;
     function resizeCanvas() {
         fitStage();
         const stage = document.getElementById('stage');
-        canvas.width = stage ? stage.clientWidth : window.innerWidth;
-        canvas.height = stage ? stage.clientHeight : window.innerHeight;
+        canvas.lw = stage ? stage.clientWidth : window.innerWidth;
+        canvas.lh = stage ? stage.clientHeight : window.innerHeight;
+        const k = stage ? (parseFloat((stage.style.transform.match(/scale\(([^)]+)\)/) || [])[1]) || 1) : 1;
+        renderScale = Math.min(3, Math.max(1, k * (window.devicePixelRatio || 1)));
+        canvas.width = Math.round(canvas.lw * renderScale);
+        canvas.height = Math.round(canvas.lh * renderScale);
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
@@ -164,17 +170,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Tính toán bố cục 2D Platform (Dũng sĩ bên trái, Boss bên phải)
     function getPlatformLayout() {
-        const isPortrait = canvas.height > canvas.width;
+        const isPortrait = canvas.lh > canvas.lw;
         // Chiều cao sàn đấu platform
-        const groundY = isPortrait ? canvas.height * 0.44 : canvas.height * 0.62;
+        const groundY = isPortrait ? canvas.lh * 0.44 : canvas.lh * 0.62;
         // Dũng sĩ đứng bên TRÁI
-        const playerX = isPortrait ? canvas.width * 0.22 : canvas.width * 0.22;
+        const playerX = isPortrait ? canvas.lw * 0.22 : canvas.lw * 0.22;
         const playerY = groundY;
         // Boss đứng bên PHẢI
-        const bossX = isPortrait ? canvas.width * 0.77 : canvas.width * 0.78;
+        const bossX = isPortrait ? canvas.lw * 0.77 : canvas.lw * 0.78;
         // Tâm thân Boss: tính đúng theo cách boss.js vẽ (kích thước, lơ lửng, tỉ lệ 0.52) để đòn đánh nổ giữa thân trên mọi màn hình
         const bType = (bossRenderer && bossRenderer.bossData && bossRenderer.bossData.boss_type) || 'dragon';
-        const bossSize = isPortrait ? Math.min(canvas.width * 0.44, 280) : 340;
+        const bossSize = isPortrait ? Math.min(canvas.lw * 0.44, 280) : 340;
         const hover = (bType === 'dragon' || bType === 'phoenix' || bType === 'frost') ? -22 : 0;
         const bossY = groundY - bossSize * 0.975 + hover + bossSize * 0.52;
 
@@ -854,13 +860,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const { offsetX, offsetY } = effects.update();
 
         // Xóa màn hình canvas
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);  // vẽ theo toạ độ logic, bộ đệm độ phân giải cao
 
         // BẮT ĐẦU VẼ THẾ GIỚI GAME 2D VỚI CAMERA CINEMATIC
         ctx.save();
 
         // 1. Áp dụng Camera Zoom (Chỉ zoom khi có quà tặng)
-        camera.apply(ctx, canvas.width, canvas.height);
+        camera.apply(ctx, canvas.lw, canvas.lh);
 
         // 2. Áp dụng rung lắc khi trúng đòn
         ctx.translate(offsetX, offsetY);
@@ -868,7 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const { groundY, playerX, playerY, bossX, bossY } = getPlatformLayout();
 
         // 3. Vẽ Sàn Đấu 2D Platform (Sprite Sheet Tileset)
-        drawBattlePlatform(ctx, canvas.width, canvas.height, groundY);
+        drawBattlePlatform(ctx, canvas.lw, canvas.lh, groundY);
 
         // 4. Vẽ Dũng Sĩ (BÊN TRÁI) - Sprite Sheet Samurai Pixel Art & Avatar TikTok
         playerRenderer.draw(ctx, playerX, playerY);
