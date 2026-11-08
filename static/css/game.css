@@ -852,3 +852,110 @@ body {
         padding: 4px 14px;
     }
 }
+
+/* ========================================================
+   SAFE ZONE TIKTOK LIVE 9:16
+   - Top ~11%: để trống (tên/avatar chủ phòng, nút đóng, số người xem)
+   - Giữa (~11% -> ~68%): sân đấu + thanh máu + bảng chiêu thức đầy đủ
+   - Bottom ~30%: vùng bình luận / giỏ hàng / quà của TikTok, không đặt thông tin quan trọng
+   ======================================================== */
+@media (max-aspect-ratio: 1/1) {
+    .ui-layer {
+        padding-top: 11vh;
+    }
+
+    .boss-header-container {
+        margin-top: 0;
+    }
+
+    .vip-banner {
+        top: calc(11vh + 108px);
+    }
+
+    /* BẢNG CHIÊU THỨC / QUÀ TẶNG: HIỂN THỊ ĐẦY ĐỦ, 2 CỘT, KHÔNG CẮT */
+    .right-panel {
+        left: 8px;
+        right: 8px;
+        width: auto;
+        top: 46vh;
+        max-height: none;
+    }
+
+    .skills-card {
+        max-height: none;
+        padding: 5px 6px;
+    }
+
+    .skills-card .skill-list {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2px 3px;
+        overflow: visible;
+        max-height: none;
+    }
+
+    .skills-card .skill-row {
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 0;
+        padding: 2px 4px;
+        line-height: 1.12;
+        min-width: 0;
+    }
+
+    .skills-card .skill-trigger {
+        font-size: 7.5px;
+    }
+
+    .skills-card .skill-desc {
+        font-size: 7px;
+        text-align: left;
+        white-space: normal;
+        overflow: visible;
+    }
+
+    /* BẢNG XẾP HẠNG: DẢI TOP 3 NGANG, NẰM NGAY DƯỚI BẢNG CHIÊU THỨC */
+    .left-panel {
+        left: 8px;
+        right: 8px;
+        width: auto;
+        top: 69vh;
+        max-height: none;
+    }
+
+    .leaderboard-card {
+        padding: 3px 6px;
+        max-height: none;
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .leaderboard-card .card-title {
+        display: none;
+    }
+
+    .leaderboard-card .leaderboard-list {
+        flex-direction: row;
+        flex: 1;
+        gap: 4px;
+        max-height: none;
+        overflow: hidden;
+    }
+
+    .leaderboard-card .leaderboard-item {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .leaderboard-card .leaderboard-item:nth-child(n+4) {
+        display: none;
+    }
+
+    .leaderboard-card .leaderboard-empty {
+        flex: 1;
+        padding: 3px 0;
+        font-size: 9px;
+    }
+}

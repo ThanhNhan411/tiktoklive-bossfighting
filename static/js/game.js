@@ -131,6 +131,22 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
+    // Màn dọc 9:16: dải bảng xếp hạng đặt ngay dưới bảng chiêu thức (chiều cao bảng đổi theo độ rộng màn hình)
+    function layoutPortraitPanels() {
+        const leftPanel = document.querySelector('.left-panel');
+        const rightPanel = document.querySelector('.right-panel');
+        if (!leftPanel || !rightPanel) return;
+        if (window.innerHeight > window.innerWidth) {
+            leftPanel.style.top = (rightPanel.getBoundingClientRect().bottom + 6) + 'px';
+        } else {
+            leftPanel.style.top = '';
+        }
+    }
+    window.addEventListener('resize', layoutPortraitPanels);
+    window.addEventListener('load', layoutPortraitPanels);
+    setTimeout(layoutPortraitPanels, 300);
+    setTimeout(layoutPortraitPanels, 1500);
+
     // Tính toán bố cục 2D Platform (Dũng sĩ bên trái, Boss bên phải)
     function getPlatformLayout() {
         const isPortrait = canvas.height > canvas.width;
